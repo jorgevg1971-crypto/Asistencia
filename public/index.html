@@ -268,10 +268,21 @@
 
           <!-- Filtro de Fecha -->
           <div class="table-filter-group">
-            <label for="filter-date"><i data-lucide="calendar"></i> Filtrar Fecha:</label>
+            <label for="filter-date"><i data-lucide="calendar"></i> Fecha:</label>
             <div class="filter-input-wrapper">
               <input type="date" id="filter-date">
               <button id="clear-filter-btn" class="clear-filter-btn" style="display: none;" title="Limpiar filtro">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filtro de Materia -->
+          <div class="table-filter-group">
+            <label for="filter-materia"><i data-lucide="book-open"></i> Materia:</label>
+            <div class="filter-input-wrapper">
+              <input type="text" id="filter-materia" placeholder="Buscar materia..." autocomplete="off">
+              <button id="clear-materia-filter-btn" class="clear-filter-btn" style="display: none;" title="Limpiar filtro">
                 <i data-lucide="x"></i>
               </button>
             </div>

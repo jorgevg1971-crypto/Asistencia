@@ -70,6 +70,10 @@ const exportJsonBtn = document.getElementById('export-json-btn');
 const filterDateInput = document.getElementById('filter-date');
 const clearFilterBtn = document.getElementById('clear-filter-btn');
 
+// Filtro de materia
+const filterMateriaInput = document.getElementById('filter-materia');
+const clearMateriaFilterBtn = document.getElementById('clear-materia-filter-btn');
+
 // Conmutador de tema
 const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const themeToggleIcon = document.getElementById('theme-toggle-icon');
@@ -504,6 +508,13 @@ function registrarEventListeners() {
   filterDateInput.addEventListener('input', renderTablaAsistencias);
   clearFilterBtn.addEventListener('click', () => {
     filterDateInput.value = '';
+    renderTablaAsistencias();
+  });
+
+  // Filtro de Materia
+  filterMateriaInput.addEventListener('input', renderTablaAsistencias);
+  clearMateriaFilterBtn.addEventListener('click', () => {
+    filterMateriaInput.value = '';
     renderTablaAsistencias();
   });
 
@@ -1320,21 +1331,32 @@ async function deleteAsistencia(id) {
 // Pintar tabla en el frontend (con badge de Gestión Académica)
 function renderTablaAsistencias() {
   const filterDate = filterDateInput.value;
-  
-  if (filterDate) {
-    clearFilterBtn.style.display = 'flex';
-  } else {
-    clearFilterBtn.style.display = 'none';
-  }
+  const rawFilterMateria = filterMateriaInput.value.trim();
+  const filterMateria = normalizeText(rawFilterMateria);
 
-  const dataFiltrada = filterDate
-    ? asistenciasData.filter(a => a.fecha === filterDate)
-    : asistenciasData;
+  // Control de botones de limpieza
+  clearFilterBtn.style.display = filterDate ? 'flex' : 'none';
+  clearMateriaFilterBtn.style.display = rawFilterMateria ? 'flex' : 'none';
+
+  // Filtrado acumulativo (Fecha AND Materia)
+  const dataFiltrada = asistenciasData.filter(a => {
+    const cumpleFecha = !filterDate || a.fecha === filterDate;
+    const cumpleMateria = !filterMateria || normalizeText(a.materia_nombre).includes(filterMateria);
+    return cumpleFecha && cumpleMateria;
+  });
 
   if (dataFiltrada.length === 0) {
+    let msg = 'No hay registros de asistencia guardados.';
+    if (filterDate && rawFilterMateria) {
+      msg = 'No hay registros para la fecha y materia seleccionadas.';
+    } else if (filterDate) {
+      msg = 'No hay registros de asistencia para la fecha seleccionada.';
+    } else if (rawFilterMateria) {
+      msg = 'No se encontraron registros para la materia buscada.';
+    }
     attendanceTbody.innerHTML = `
       <tr class="empty-row">
-        <td colspan="10">${filterDate ? 'No hay registros de asistencia para la fecha seleccionada.' : 'No hay registros de asistencia guardados.'}</td>
+        <td colspan="10">${msg}</td>
       </tr>
     `;
     return;

@@ -1339,7 +1339,8 @@ tr:hover:not(.empty-row) {
   gap: 8px;
 }
 
-.table-filter-group input[type="date"] {
+.table-filter-group input[type="date"],
+.table-filter-group input[type="text"] {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
@@ -1349,12 +1350,24 @@ tr:hover:not(.empty-row) {
   padding: 5px 10px;
   outline: none;
   transition: var(--transition-smooth);
+}
+
+.table-filter-group input[type="date"] {
   color-scheme: dark; /* Para asegurar calendario oscuro nativo en Chrome/Edge */
 }
 
-.table-filter-group input[type="date"]:focus {
+.table-filter-group input[type="text"] {
+  width: 170px;
+}
+
+.table-filter-group input[type="date"]:focus,
+.table-filter-group input[type="text"]:focus {
   border-color: rgba(165, 180, 252, 0.4);
   box-shadow: 0 0 0 2px rgba(165, 180, 252, 0.15);
+}
+
+.table-filter-group input[type="text"]:focus {
+  width: 220px; /* Sutil expansión interactiva */
 }
 
 .clear-filter-btn {

@@ -515,6 +515,21 @@ function registrarEventListeners() {
   exportCsvBtn.addEventListener('click', exportarCSV);
   exportJsonBtn.addEventListener('click', exportarJSON);
 
+  // Desbloqueo secreto de Programa de Carrera (Triple Clic)
+  programaInput.addEventListener('click', (e) => {
+    if (e.detail === 3) {
+      const password = prompt("Ingrese la contraseña de desbloqueo para editar el programa:");
+      if (password === "2323") {
+        programaInput.removeAttribute('readonly');
+        programaInput.classList.remove('readonly-input');
+        showToast('Campo "Programa" desbloqueado para edición manual.', 'success');
+        programaInput.focus();
+      } else if (password !== null) {
+        showToast('Contraseña incorrecta.', 'error');
+      }
+    }
+  });
+
   // Filtro de Fecha
   filterDateInput.addEventListener('input', renderTablaAsistencias);
   clearFilterBtn.addEventListener('click', () => {
@@ -1221,6 +1236,10 @@ function cancelarAsistenciaEdit() {
   submitBtn.style.background = '';
   cancelAttendanceEditBtn.style.display = 'none';
   
+  // Asegurar que el programa de la carrera vuelva a bloquearse
+  programaInput.setAttribute('readonly', true);
+  programaInput.classList.add('readonly-input');
+
   lucide.createIcons();
 }
 

@@ -116,7 +116,12 @@ app.get('/api/maestros', async (req, res) => {
 // 2. Obtener todas las asistencias registradas
 app.get('/api/asistencias', async (req, res) => {
   try {
-    const asistencias = await dbQueryAll("SELECT * FROM asistencias ORDER BY fecha DESC, id DESC");
+    const asistencias = await dbQueryAll(`
+      SELECT a.*, m.idioma_predeterminado AS materia_idioma_predeterminado 
+      FROM asistencias a
+      LEFT JOIN materias m ON a.materia_id = m.id
+      ORDER BY a.fecha DESC, a.id DESC
+    `);
     res.json(asistencias);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener asistencias: ' + error.message });

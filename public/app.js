@@ -1352,9 +1352,14 @@ function renderTablaAsistencias() {
 
     let idiomaCell = 'N/A';
     if (item.dicto_clases === 'SI') {
-      idiomaCell = item.idioma_dictado === 'Español'
-        ? `<span class="badge esp">ES</span>`
-        : `<span class="badge eng">EN</span>`;
+      const esDesvio = (item.materia_idioma_predeterminado === 'Inglés' && item.idioma_dictado === 'Español');
+      if (esDesvio) {
+        idiomaCell = `<span class="badge no" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); font-weight: bold; gap: 4px; padding: 4px 8px; font-size: 10px;" title="Desvío: Materia de Inglés dictada en Español"><i data-lucide="alert-triangle" style="width: 11px; height: 11px;"></i> ES</span>`;
+      } else {
+        idiomaCell = item.idioma_dictado === 'Español'
+          ? `<span class="badge esp">ES</span>`
+          : `<span class="badge eng">EN</span>`;
+      }
     }
 
     tr.innerHTML = `

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de control y asistencia para docentes de ePC. Registra materias, programas y horarios.">
+  <title>ePC Asistencia - Registro de Clases Docentes</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons (CDN) para iconos limpios y modernos -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Hoja de Estilos -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <i data-lucide="check-square"></i>
+        </div>
+        <div>
+          <h1>ePC Asistencia</h1>
+          <p class="subtitle">Sistema de Control de Clases Docentes</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="date-badge">
+          <i data-lucide="calendar"></i>
+          <span id="current-date-badge">-</span>
+        </div>
+        <button id="open-admin-btn" class="admin-btn" title="Gestionar docentes y materias">
+          <i data-lucide="settings"></i> Gestionar Datos
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="app-main">
+      <!-- Sección Formulario -->
+      <section class="card-section form-card">
+        <div class="card-header">
+          <i data-lucide="edit-3"></i>
+          <h2>Registrar Asistencia</h2>
+        </div>
+        <form id="attendance-form" novalidate>
+          
+          <div class="form-grid">
+            <!-- Fecha -->
+            <div class="form-group">
+              <label for="fecha"><i data-lucide="calendar-days"></i> Fecha de Registro</label>
+              <input type="date" id="fecha" name="fecha" required>
+            </div>
+
+            <!-- Gestión Académica -->
+            <div class="form-group">
+              <label for="gestion_id"><i data-lucide="calendar"></i> Gestión Académica</label>
+              <select id="gestion_id" name="gestion_id" required>
+                <!-- Cargado dinámicamente -->
+              </select>
+            </div>
+
+            <!-- Docente Autocomplete -->
+            <div class="form-group autocomplete-container" id="docente-container">
+              <label for="docente_buscar"><i data-lucide="user"></i> Profesor / Docente</label>
+              <div class="input-search-wrapper">
+                <input type="text" id="docente_buscar" placeholder="Escribe el nombre del docente..." autocomplete="off" required>
+                <input type="hidden" id="docente_id" name="docente_id" required>
+                <button type="button" class="clear-search-btn" id="clear-docente-btn" style="display: none;">
+                  <i data-lucide="x"></i>
+                </button>
+              </div>
+              <div class="suggestions-list" id="docente-suggestions" style="display: none;"></div>
+            </div>
+
+            <!-- Materia Autocomplete -->
+            <div class="form-group autocomplete-container" id="materia-container">
+              <label for="materia_buscar"><i data-lucide="book-open"></i> Materia</label>
+              <div class="input-search-wrapper">
+                <input type="text" id="materia_buscar" placeholder="Escribe el nombre de la materia..." autocomplete="off" required>
+                <input type="hidden" id="materia_id" name="materia_id" required>
+                <button type="button" class="clear-search-btn" id="clear-materia-btn" style="display: none;">
+                  <i data-lucide="x"></i>
+                </button>
+              </div>
+              <div class="suggestions-list" id="materia-suggestions" style="display: none;"></div>
+            </div>
+
+            <!-- Programa -->
+            <div class="form-group form-group-full">
+              <label for="programa"><i data-lucide="graduation-cap"></i> Programa de Carrera</label>
+              <input type="text" id="programa" name="programa" readonly placeholder="Auto-seleccionado" class="readonly-input">
+            </div>
+          </div>
+
+          <!-- Dictó clases (SI/NO) -->
+          <div class="form-group statement-box">
+            <label class="statement-label">¿El docente dictó clases?</label>
+            <div class="radio-toggle">
+              <input type="radio" id="dicto_si" name="dicto_clases" value="SI" checked>
+              <label for="dicto_si" class="toggle-btn toggle-yes">
+                <i data-lucide="check-circle-2"></i> SÍ
+              </label>
+              
+              <input type="radio" id="dicto_no" name="dicto_clases" value="NO">
+              <label for="dicto_no" class="toggle-btn toggle-no">
+                <i data-lucide="x-circle"></i> NO
+              </label>
+            </div>
+          </div>
+
+          <!-- Campos condicionales si dictó clase -->
+          <div id="class-details-container" class="conditional-container animate-fade">
+            
+            <div class="form-grid-3-equal">
+              <!-- Clase (Presencial/Virtual) -->
+              <div class="form-group">
+                <label for="clase"><i data-lucide="monitor"></i> Modalidad de Clase</label>
+                <select id="clase" name="clase">
+                  <option value="Presencial" selected>Presencial</option>
+                  <option value="Virtual">Virtual</option>
+                </select>
+              </div>
+
+              <!-- Idioma de dictado -->
+              <div class="form-group">
+                <label for="idioma_dictado"><i data-lucide="languages"></i> Idioma Impartido</label>
+                <select id="idioma_dictado" name="idioma_dictado">
+                  <option value="Español">Español</option>
+                  <option value="Inglés">Inglés</option>
+                </select>
+              </div>
+
+              <!-- ¿Clase de reposición? -->
+              <div class="form-group">
+                <label for="reposicion"><i data-lucide="refresh-cw"></i> ¿Es Reposición?</label>
+                <select id="reposicion" name="reposicion">
+                  <option value="NO" selected>NO</option>
+                  <option value="SI">SÍ</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid-3">
+              <!-- Inicio de clase (Puntual/Con Retraso) -->
+              <div class="form-group">
+                <label for="inicio"><i data-lucide="clock"></i> Inicio de Clase</label>
+                <select id="inicio" name="inicio">
+                  <option value="Puntual" selected>Puntual</option>
+                  <option value="Con Retraso">Con Retraso</option>
+                </select>
+              </div>
+
+              <!-- Minutos de atraso (Condicional) -->
+              <div id="atraso-minutes-group" class="form-group conditional-input animate-slide-down" style="display: none;">
+                <label for="minutos_atraso"><i data-lucide="timer"></i> Minutos de Atraso</label>
+                <input type="number" id="minutos_atraso" name="minutos_atraso" min="1" placeholder="Ej. 15">
+              </div>
+            </div>
+
+            <div class="form-grid-3">
+              <!-- Fin de clase (Puntual/Se extendió/Se fue antes) -->
+              <div class="form-group">
+                <label for="final_clase"><i data-lucide="log-out"></i> Final de Clase</label>
+                <select id="final_clase" name="final_clase">
+                  <option value="Puntual" selected>Puntual</option>
+                  <option value="Se extendió">Se extendió</option>
+                  <option value="Se fue antes">Se fue antes</option>
+                </select>
+              </div>
+
+              <!-- Minutos de extensión o antes (Condicional) -->
+              <div id="final-minutes-group" class="form-group conditional-input animate-slide-down" style="display: none;">
+                <label for="minutos_final" id="minutos_final_label"><i data-lucide="timer"></i> Minutos</label>
+                <input type="number" id="minutos_final" name="minutos_final" min="1" placeholder="Ej. 10">
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Comentarios -->
+          <div class="form-group comment-group">
+            <label for="comentarios"><i data-lucide="message-square"></i> Comentarios / Observaciones</label>
+            <textarea id="comentarios" name="comentarios" rows="3" placeholder="Ingrese detalles adicionales o motivos de inasistencia/atraso..."></textarea>
+          </div>
+
+          <!-- Botón guardar -->
+          <div class="form-actions-group">
+            <button type="submit" class="submit-btn" id="submit-btn">
+              <span class="btn-text">Registrar Asistencia</span>
+              <div class="spinner" id="btn-spinner" style="display: none;"></div>
+            </button>
+            <button type="button" class="cancel-edit-btn" id="cancel-attendance-edit-btn" style="display: none;">
+              <i data-lucide="x-circle"></i> Cancelar Edición
+            </button>
+          </div>
+
+        </form>
+      </section>
+
+      <!-- Panel de Datos e Historial -->
+      <section class="card-section data-card">
+        <!-- Estadísticas Rápidas -->
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-icon blue">
+              <i data-lucide="award"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-title">Clases Programadas</span>
+              <span class="stat-value" id="stat-total">0</span>
+            </div>
+          </div>
+
+          <div class="stat-box">
+            <div class="stat-icon green">
+              <i data-lucide="check-circle"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-title">Clases Dictadas</span>
+              <span class="stat-value" id="stat-dictadas">0</span>
+            </div>
+          </div>
+
+          <div class="stat-box">
+            <div class="stat-icon red">
+              <i data-lucide="alert-triangle"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-title">Atrasos Acumulados</span>
+              <span class="stat-value" id="stat-atraso">0 min</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Registros -->
+        <div class="table-container-header">
+          <div class="table-header-left">
+            <i data-lucide="list"></i>
+            <h2>Historial de Asistencia</h2>
+          </div>
+          <div class="export-buttons">
+            <button id="export-csv-btn" class="export-btn csv">
+              <i data-lucide="file-spreadsheet"></i> Exportar CSV
+            </button>
+            <button id="export-json-btn" class="export-btn json">
+              <i data-lucide="file-json"></i> Exportar JSON
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="attendance-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Docente</th>
+                <th>Materia</th>
+                <th>Programa</th>
+                <th>Dictó</th>
+                <th>Mod.</th>
+                <th>Horarios (Ini / Fin)</th>
+                <th>Idioma</th>
+                <th>Comentarios</th>
+                <th class="actions-col">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-tbody">
+              <!-- Se cargará dinámicamente -->
+              <tr class="empty-row">
+                <td colspan="10">No hay registros de asistencia guardados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="toast" style="display: none;">
+      <i id="toast-icon" data-lucide="info"></i>
+      <span id="toast-message">Notificación</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>&copy; 2026 ePC Asistencia. Todos los derechos reservados. | Diseñado con fines de administración académica y posterior procesamiento.</p>
+    </footer>
+  </div>
+
+  <!-- Modal de Administración de Datos Maestros -->
+  <div id="admin-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <i data-lucide="database"></i>
+          <h2>Gestionar Docentes y Materias</h2>
+        </div>
+        <button id="close-admin-btn" class="modal-close-btn" title="Cerrar ventana">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      
+      <!-- Pestañas -->
+      <div class="modal-tabs">
+        <button class="tab-btn active" data-tab="tab-docentes">Docentes</button>
+        <button class="tab-btn" data-tab="tab-materias">Materias</button>
+        <button class="tab-btn" data-tab="tab-gestiones">Gestiones</button>
+      </div>
+      
+      <!-- Contenido Pestañas -->
+      <div class="modal-body">
+        
+        <!-- Pestaña Docentes -->
+        <div id="tab-docentes" class="tab-content animate-fade">
+          <div class="admin-toggle-mode">
+            <button class="flat-mode-btn active" id="docentes-single-mode-btn">Individual</button>
+            <button class="flat-mode-btn" id="docentes-bulk-mode-btn"><i data-lucide="list-plus"></i> Carga Masiva</button>
+          </div>
+
+          <!-- Formulario Individual -->
+          <form id="new-docente-form" class="admin-form">
+            <div class="form-group">
+              <label for="new_docente_nombre">Nombre Completo del Docente</label>
+              <div class="input-inline-group">
+                <input type="text" id="new_docente_nombre" placeholder="Ej. Dr. Andrés Mendoza" required autocomplete="off">
+                <button type="submit" class="admin-submit-btn" id="docente-submit-btn">Agregar</button>
+                <button type="button" class="admin-cancel-btn" id="cancel-docente-edit-btn" style="display: none;">Cancelar</button>
+              </div>
+            </div>
+          </form>
+
+          <!-- Formulario Carga Masiva -->
+          <form id="bulk-docente-form" class="admin-form" style="display: none;">
+            <div class="form-group">
+              <label for="bulk_docentes_lista">Pega los nombres aquí (uno por línea)</label>
+              <textarea id="bulk_docentes_lista" placeholder="Dra. María Gómez&#10;Dr. Juan Pérez&#10;MSc. Carlos Rodríguez..." rows="4"></textarea>
+              <button type="submit" class="admin-submit-btn-full" id="docente-bulk-submit-btn" style="margin-top: 8px;">Cargar Lista de Docentes</button>
+            </div>
+          </form>
+          
+          <div class="admin-list-container">
+            <h3>Docentes Registrados</h3>
+            <ul id="admin-docentes-list" class="admin-items-list">
+              <!-- Cargado dinámicamente -->
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Pestaña Materias -->
+        <div id="tab-materias" class="tab-content animate-fade" style="display: none;">
+          <div class="admin-toggle-mode">
+            <button class="flat-mode-btn active" id="materias-single-mode-btn">Individual</button>
+            <button class="flat-mode-btn" id="materias-bulk-mode-btn"><i data-lucide="list-plus"></i> Carga Masiva</button>
+          </div>
+
+          <!-- Formulario Completo de Materias -->
+          <form id="new-materia-form" class="admin-form">
+            <div class="form-grid">
+              <div class="form-group" id="materia-nombre-group">
+                <label for="new_materia_nombre">Nombre de la Materia</label>
+                <input type="text" id="new_materia_nombre" placeholder="Ej. Finanzas Corporativas" required autocomplete="off">
+              </div>
+              
+              <!-- Carga Masiva Textarea (se mostrará cuando se active bulk) -->
+              <div class="form-group form-group-full" id="materia-bulk-group" style="display: none;">
+                <label for="bulk_materias_lista">Pega las materias aquí (una por línea)</label>
+                <textarea id="bulk_materias_lista" placeholder="Finanzas Corporativas&#10;Macroeconomía Aplicada&#10;Marketing Estratégico..." rows="4"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="new_materia_programa">Programa (Aplica a la selección)</label>
+                <select id="new_materia_programa" required>
+                  <option value="LpD" selected>LpD (Licenciaturas para el Desarrollo)</option>
+                  <option value="TUSGE">TUSGE (Técnico Universitario Gestión y Emprendimiento)</option>
+                  <option value="MpD">MpD (Maestrías para el Desarrollo)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="new_materia_idioma">Idioma Predeterminado</label>
+                <select id="new_materia_idioma" required>
+                  <option value="Español" selected>Español</option>
+                  <option value="Inglés">Inglés</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="admin-form-actions">
+              <button type="submit" class="admin-submit-btn-full" id="materia-submit-btn">Agregar Materia</button>
+              <button type="button" class="admin-cancel-btn-full" id="cancel-materia-edit-btn" style="display: none;">Cancelar Edición</button>
+            </div>
+          </form>
+          
+          <div class="admin-list-container">
+            <h3>Materias Registradas</h3>
+            <ul id="admin-materias-list" class="admin-items-list">
+              <!-- Cargado dinámicamente -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- Pestaña Gestiones -->
+        <div id="tab-gestiones" class="tab-content animate-fade" style="display: none;">
+          <form id="new-gestion-form" class="admin-form">
+            <div class="form-group">
+              <label for="new_gestion_nombre">Nombre de la Gestión Académica</label>
+              <div class="input-inline-group">
+                <input type="text" id="new_gestion_nombre" placeholder="Ej. Sem I - 2026" required autocomplete="off">
+                <button type="submit" class="admin-submit-btn" id="gestion-submit-btn">Agregar</button>
+                <button type="button" class="admin-cancel-btn" id="cancel-gestion-edit-btn" style="display: none;">Cancelar</button>
+              </div>
+            </div>
+          </form>
+          
+          <div class="admin-list-container">
+            <h3>Gestiones Académicas</h3>
+            <ul id="admin-gestiones-list" class="admin-items-list">
+              <!-- Cargado dinámicamente -->
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -56,6 +56,8 @@ const cancelAttendanceEditBtn = document.getElementById('cancel-attendance-edit-
 const statTotal = document.getElementById('stat-total');
 const statDictadas = document.getElementById('stat-dictadas');
 const statAtraso = document.getElementById('stat-atraso');
+const statSinDictar = document.getElementById('stat-sin-dictar');
+const statSinDictarHoy = document.getElementById('stat-sin-dictar-hoy');
 
 // Tabla Principal
 const attendanceTbody = document.getElementById('attendance-tbody');
@@ -1342,14 +1344,28 @@ function renderTablaAsistencias() {
 function calcularEstadisticas() {
   const total = asistenciasData.length;
   const dictadas = asistenciasData.filter(a => a.dicto_clases === 'SI').length;
+  const sinDictar = asistenciasData.filter(a => a.dicto_clases === 'NO').length;
   
   const atraso = asistenciasData.reduce((acc, a) => {
     return acc + (a.minutos_atraso || 0);
   }, 0);
 
+  // Obtener fecha de hoy en formato YYYY-MM-DD
+  const hoy = new Date();
+  const yyyy = hoy.getFullYear();
+  let mm = hoy.getMonth() + 1;
+  let dd = hoy.getDate();
+  if (dd < 10) dd = '0' + dd;
+  if (mm < 10) mm = '0' + mm;
+  const fechaHoyStr = `${yyyy}-${mm}-${dd}`;
+
+  const sinDictarHoy = asistenciasData.filter(a => a.fecha === fechaHoyStr && a.dicto_clases === 'NO').length;
+
   statTotal.textContent = total;
   statDictadas.textContent = dictadas;
   statAtraso.textContent = `${atraso} min`;
+  statSinDictar.textContent = sinDictar;
+  statSinDictarHoy.textContent = sinDictarHoy;
 }
 
 // Mostrar Toasts elegantes

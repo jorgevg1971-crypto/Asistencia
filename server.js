@@ -463,24 +463,38 @@ app.delete('/api/gestiones/:id', async (req, res) => {
 
 const os = require('os');
 
-function getLocalIpAddress() {
+function getLocalIpAddresses() {
+  const ipList = [];
   const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name]) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
+      if ((iface.family === 'IPv4' || iface.family === 4) && !iface.internal) {
+        ipList.push({ name, address: iface.address });
       }
     }
   }
-  return 'localhost';
+  return ipList;
 }
 
 // Levantar servidor escuchando en todas las interfaces de red (0.0.0.0)
 app.listen(PORT, '0.0.0.0', () => {
-  const localIp = getLocalIpAddress();
+  const ips = getLocalIpAddresses();
   console.log(`\n======================================================`);
   console.log(`Servidor de ePC Asistencia iniciado correctamente.`);
   console.log(`- Acceso Local:      http://localhost:${PORT}`);
-  console.log(`- Acceso Red Local:  http://${localIp}:${PORT}`);
+  console.log(`- Acceso Red Local (LAN / VPN):`);
+  if (ips.length > 0) {
+    ips.forEach(ip => {
+      let label = 'Red Física';
+      if (ip.name.toLowerCase().includes('tailscale') || ip.address.startsWith('100.')) {
+        label = 'VPN / Tailscale';
+      } else if (ip.name.toLowerCase().includes('vbox') || ip.name.toLowerCase().includes('virtual')) {
+        label = 'VirtualBox / Máquina Virtual';
+      }
+      console.log(`  * http://${ip.address}:${PORT}  (${label})`);
+    });
+  } else {
+    console.log(`  * http://localhost:${PORT}`);
+  }
   console.log(`======================================================\n`);
 });

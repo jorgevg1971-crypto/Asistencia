@@ -8,8 +8,9 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inicializar base de datos SQLite
-const dbPath = path.join(__dirname, 'database.db');
+// Inicializar base de datos SQLite (soporta rutas de red compartidas)
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'database.db');
+console.log(`Utilizando base de datos en: ${dbPath}`);
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error al abrir la base de datos:', err.message);
@@ -460,7 +461,26 @@ app.delete('/api/gestiones/:id', async (req, res) => {
   }
 });
 
-// Levantar servidor
-app.listen(PORT, () => {
-  console.log(`Servidor de ePC Asistencia corriendo en http://localhost:${PORT}`);
+const os = require('os');
+
+function getLocalIpAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
+// Levantar servidor escuchando en todas las interfaces de red (0.0.0.0)
+app.listen(PORT, '0.0.0.0', () => {
+  const localIp = getLocalIpAddress();
+  console.log(`\n======================================================`);
+  console.log(`Servidor de ePC Asistencia iniciado correctamente.`);
+  console.log(`- Acceso Local:      http://localhost:${PORT}`);
+  console.log(`- Acceso Red Local:  http://${localIp}:${PORT}`);
+  console.log(`======================================================\n`);
 });

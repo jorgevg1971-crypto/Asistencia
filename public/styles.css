@@ -1354,8 +1354,8 @@ tr:hover:not(.empty-row) {
 
 .table-filter-group input[type="date"],
 .table-filter-group input[type="text"] {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 6px;
   color: var(--text-primary);
   font-family: var(--font-family);
@@ -1367,6 +1367,15 @@ tr:hover:not(.empty-row) {
 
 .table-filter-group input[type="date"] {
   color-scheme: dark; /* Para asegurar calendario oscuro nativo en Chrome/Edge */
+}
+
+body.light-theme .table-filter-group input[type="date"] {
+  color-scheme: light; /* Asegurar calendario claro en modo claro */
+}
+
+body.light-theme .table-filter-group input[type="text"]::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
 }
 
 .table-filter-group input[type="text"] {

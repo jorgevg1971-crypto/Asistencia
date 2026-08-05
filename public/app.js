@@ -1268,9 +1268,17 @@ function renderTablaAsistencias() {
 
     let modCell = 'N/A';
     if (item.dicto_clases === 'SI') {
-      modCell = item.clase === 'Presencial' 
-        ? `<span class="badge presencial"><i data-lucide="user"></i> Presencial</span>`
-        : `<span class="badge virtual"><i data-lucide="laptop"></i> Virtual</span>`;
+      if (item.clase === 'Presencial') {
+        modCell = `<span class="badge presencial"><i data-lucide="user"></i> Presencial</span>`;
+      } else if (item.clase === 'Virtual') {
+        modCell = `<span class="badge virtual"><i data-lucide="laptop"></i> Virtual</span>`;
+      } else if (item.clase === 'CLASES SIN DICTAR') {
+        modCell = `<span class="badge no" style="background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.2); font-size:10px;"><i data-lucide="calendar-off"></i> Sin Dictar</span>`;
+      } else if (item.clase === 'SIN DICTAR HOY') {
+        modCell = `<span class="badge no" style="font-size:10px;"><i data-lucide="x-circle"></i> Sin Dictar Hoy</span>`;
+      } else {
+        modCell = `<span class="badge no">${item.clase}</span>`;
+      }
     }
 
     let horariosCell = 'N/A';

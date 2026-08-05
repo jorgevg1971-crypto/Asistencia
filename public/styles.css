@@ -76,6 +76,13 @@ body.light-theme textarea:focus {
   background: #ffffff;
 }
 
+/* Corrección de contraste para el título en Modo Claro */
+body.light-theme .app-header h1 {
+  background: linear-gradient(to right, #0f172a, #2563eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* Reset y Estilos Generales */
 * {
   margin: 0;

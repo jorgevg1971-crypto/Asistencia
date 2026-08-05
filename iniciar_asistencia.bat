@@ -9,7 +9,7 @@ echo.
 node -v >nul 2>&1
 if %errorlevel% neq 0 (
   echo Error: Node.js no esta instalado en esta maquina.
-  echo Por favor instala Node.js (https://nodejs.org) antes de continuar.
+  echo Por favor instala Node.js [https://nodejs.org] antes de continuar.
   echo.
   pause
   exit

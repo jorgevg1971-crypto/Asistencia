@@ -1201,6 +1201,21 @@ async function handleFormSubmit(e) {
 
   const dictoClases = dictoSiRadio.checked ? 'SI' : 'NO';
 
+  // Validar duplicados localmente y mostrar advertencia interactiva (confirm)
+  const yaExiste = asistenciasData.some(a => 
+    a.fecha === fechaInput.value && 
+    a.docente_id === docenteId && 
+    a.materia_id === materiaId &&
+    a.id !== asistenciaEditId
+  );
+
+  if (yaExiste) {
+    const confirmar = confirm("Esta materia ya fue registrada hoy para este profesor. ¿Deseas añadir un nuevo registro de todas formas?");
+    if (!confirmar) {
+      return;
+    }
+  }
+
   const bodyData = {
     fecha: fechaInput.value,
     docente_id: docenteId,

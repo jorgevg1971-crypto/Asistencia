@@ -74,6 +74,11 @@ const clearFilterBtn = document.getElementById('clear-filter-btn');
 const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const themeToggleIcon = document.getElementById('theme-toggle-icon');
 
+// Pantalla Completa Historial
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+const fullscreenIcon = document.getElementById('fullscreen-icon');
+const dataCard = document.querySelector('.data-card');
+
 // Toast Notification
 const toast = document.getElementById('toast-notification');
 const toastMessage = document.getElementById('toast-message');
@@ -500,6 +505,19 @@ function registrarEventListeners() {
   clearFilterBtn.addEventListener('click', () => {
     filterDateInput.value = '';
     renderTablaAsistencias();
+  });
+
+  // Pantalla Completa Historial
+  fullscreenBtn.addEventListener('click', () => {
+    const isFullscreen = dataCard.classList.toggle('fullscreen-mode');
+    if (isFullscreen) {
+      fullscreenIcon.setAttribute('data-lucide', 'minimize-2');
+      fullscreenBtn.setAttribute('title', 'Salir de pantalla completa');
+    } else {
+      fullscreenIcon.setAttribute('data-lucide', 'maximize-2');
+      fullscreenBtn.setAttribute('title', 'Ampliar a pantalla completa');
+    }
+    lucide.createIcons();
   });
 
   // Conmutador de Tema (Theme Toggle)

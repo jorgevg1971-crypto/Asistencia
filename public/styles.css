@@ -53,8 +53,8 @@ body.light-theme {
   --text-secondary: #334155;
   --text-muted: #64748b;
   
-  --input-bg: rgba(255, 255, 255, 0.95);
-  --input-border: rgba(15, 23, 42, 0.12);
+  --input-bg: #f1f5f9;
+  --input-border: rgba(15, 23, 42, 0.16);
   
   --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
   --shadow-glow: 0 0 15px rgba(59, 130, 246, 0.12);
@@ -67,6 +67,13 @@ body.light-theme {
   --badge-bg: rgba(15, 23, 42, 0.05);
   --modal-bg: #ffffff;
   --modal-border: rgba(15, 23, 42, 0.1);
+}
+
+/* Comportamiento dinámico de Inputs en Modo Claro al enfocar */
+body.light-theme input:focus,
+body.light-theme select:focus,
+body.light-theme textarea:focus {
+  background: #ffffff;
 }
 
 /* Reset y Estilos Generales */

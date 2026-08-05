@@ -570,6 +570,8 @@ textarea {
   align-items: center;
   gap: 14px;
   transition: var(--transition-smooth);
+  cursor: pointer;
+  user-select: none;
 }
 
 .stat-box:hover {
@@ -577,6 +579,17 @@ textarea {
   opacity: 0.85;
   transform: translateY(-2px);
   border-color: var(--primary-color);
+  box-shadow: var(--shadow-glow);
+}
+
+.stat-box.active-filter {
+  border-color: var(--primary-color) !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+body.light-theme .stat-box.active-filter {
+  background: rgba(37, 99, 235, 0.06) !important;
 }
 
 .stat-icon {

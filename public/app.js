@@ -11,6 +11,9 @@ let asistenciaEditId = null;
 // Modos de carga en Admin (individual / masivo)
 let materiaBulkMode = false;
 
+// Estado del filtro rápido por tarjetas
+let currentStatsFilter = 'todos';
+
 // Elementos del DOM
 const fechaInput = document.getElementById('fecha');
 const currentDateBadge = document.getElementById('current-date-badge');
@@ -82,6 +85,14 @@ const themeToggleIcon = document.getElementById('theme-toggle-icon');
 const fullscreenBtn = document.getElementById('fullscreen-btn');
 const fullscreenIcon = document.getElementById('fullscreen-icon');
 const dataCard = document.querySelector('.data-card');
+
+// Cajas de estadísticas rápidas para filtrado
+const boxTotal = document.getElementById('box-stat-total');
+const boxDictadas = document.getElementById('box-stat-dictadas');
+const boxAtrasos = document.getElementById('box-stat-atrasos');
+const boxSinDictar = document.getElementById('box-stat-sin-dictar');
+const boxSinDictarHoy = document.getElementById('box-stat-sin-dictar-hoy');
+const boxStatsElements = [boxTotal, boxDictadas, boxAtrasos, boxSinDictar, boxSinDictarHoy];
 
 // Toast Notification
 const toast = document.getElementById('toast-notification');
@@ -517,7 +528,29 @@ function registrarEventListeners() {
     filterMateriaInput.value = '';
     renderTablaAsistencias();
   });
+  // Filtros Rápidos por Tarjetas de Estadísticas
+  function setupStatsFilter(boxElement, filterValue) {
+    if (!boxElement) return;
+    boxElement.addEventListener('click', () => {
+      if (currentStatsFilter === filterValue) {
+        currentStatsFilter = 'todos';
+        boxElement.classList.remove('active-filter');
+      } else {
+        currentStatsFilter = filterValue;
+        boxStatsElements.forEach(box => {
+          if (box) box.classList.remove('active-filter');
+        });
+        boxElement.classList.add('active-filter');
+      }
+      renderTablaAsistencias();
+    });
+  }
 
+  setupStatsFilter(boxTotal, 'todos');
+  setupStatsFilter(boxDictadas, 'dictadas');
+  setupStatsFilter(boxAtrasos, 'atrasos');
+  setupStatsFilter(boxSinDictar, 'sin-dictar');
+  setupStatsFilter(boxSinDictarHoy, 'sin-dictar-hoy');
   // Pantalla Completa Historial
   fullscreenBtn.addEventListener('click', () => {
     const isFullscreen = dataCard.classList.toggle('fullscreen-mode');
@@ -1338,21 +1371,45 @@ function renderTablaAsistencias() {
   clearFilterBtn.style.display = filterDate ? 'flex' : 'none';
   clearMateriaFilterBtn.style.display = rawFilterMateria ? 'flex' : 'none';
 
-  // Filtrado acumulativo (Fecha AND Materia)
+  // Obtener fecha de hoy local en formato YYYY-MM-DD
+  const hoy = new Date();
+  const yyyy = hoy.getFullYear();
+  let mm = hoy.getMonth() + 1;
+  let dd = hoy.getDate();
+  if (dd < 10) dd = '0' + dd;
+  if (mm < 10) mm = '0' + mm;
+  const fechaHoyStr = `${yyyy}-${mm}-${dd}`;
+
+  // Filtrado acumulativo (Fecha AND Materia AND Estadísticas)
   const dataFiltrada = asistenciasData.filter(a => {
     const cumpleFecha = !filterDate || a.fecha === filterDate;
     const cumpleMateria = !filterMateria || normalizeText(a.materia_nombre).includes(filterMateria);
-    return cumpleFecha && cumpleMateria;
+    
+    let cumpleStats = true;
+    if (currentStatsFilter === 'dictadas') {
+      cumpleStats = a.dicto_clases === 'SI';
+    } else if (currentStatsFilter === 'atrasos') {
+      cumpleStats = a.inicio === 'Con Retraso';
+    } else if (currentStatsFilter === 'sin-dictar') {
+      cumpleStats = a.dicto_clases === 'NO';
+    } else if (currentStatsFilter === 'sin-dictar-hoy') {
+      cumpleStats = (a.fecha === fechaHoyStr && a.dicto_clases === 'NO');
+    }
+    
+    return cumpleFecha && cumpleMateria && cumpleStats;
   });
 
   if (dataFiltrada.length === 0) {
     let msg = 'No hay registros de asistencia guardados.';
-    if (filterDate && rawFilterMateria) {
-      msg = 'No hay registros para la fecha y materia seleccionadas.';
-    } else if (filterDate) {
-      msg = 'No hay registros de asistencia para la fecha seleccionada.';
-    } else if (rawFilterMateria) {
-      msg = 'No se encontraron registros para la materia buscada.';
+    if (filterDate || rawFilterMateria || currentStatsFilter !== 'todos') {
+      const filtrosActivos = [];
+      if (filterDate) filtrosActivos.push('la fecha seleccionada');
+      if (rawFilterMateria) filtrosActivos.push('la materia buscada');
+      if (currentStatsFilter === 'dictadas') filtrosActivos.push('clases dictadas');
+      if (currentStatsFilter === 'atrasos') filtrosActivos.push('atrasos');
+      if (currentStatsFilter === 'sin-dictar') filtrosActivos.push('clases sin dictar');
+      if (currentStatsFilter === 'sin-dictar-hoy') filtrosActivos.push('clases sin dictar hoy');
+      msg = `No se encontraron registros que cumplan con: ${filtrosActivos.join(', ')}.`;
     }
     attendanceTbody.innerHTML = `
       <tr class="empty-row">

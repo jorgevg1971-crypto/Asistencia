@@ -150,6 +150,19 @@ app.post('/api/asistencias', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos obligatorios para el registro.' });
   }
 
+  // Validar duplicados (misma fecha, mismo docente y misma materia)
+  try {
+    const registroDuplicado = await dbGet(
+      "SELECT id FROM asistencias WHERE fecha = ? AND docente_id = ? AND materia_id = ?",
+      [fecha, docente_id, materia_id]
+    );
+    if (registroDuplicado) {
+      return res.status(400).json({ error: 'Ya existe un registro de asistencia para este profesor, materia y fecha.' });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'Error al validar duplicidad: ' + err.message });
+  }
+
   const sql = `INSERT INTO asistencias (
     fecha, docente_id, docente_nombre, materia_id, materia_nombre, programa,
     gestion_id, gestion_nombre, dicto_clases, clase, reposicion, inicio, minutos_atraso, final_clase, minutos_final,
@@ -362,6 +375,19 @@ app.put('/api/asistencias/:id', async (req, res) => {
 
   if (!fecha || !docente_id || !docente_nombre || !materia_id || !materia_nombre || !programa || !gestion_id || !gestion_nombre || !dicto_clases) {
     return res.status(400).json({ error: 'Faltan campos obligatorios para actualizar el registro.' });
+  }
+
+  // Validar duplicados (misma fecha, mismo docente y misma materia, excluyendo el ID actual)
+  try {
+    const registroDuplicado = await dbGet(
+      "SELECT id FROM asistencias WHERE fecha = ? AND docente_id = ? AND materia_id = ? AND id != ?",
+      [fecha, docente_id, materia_id, id]
+    );
+    if (registroDuplicado) {
+      return res.status(400).json({ error: 'Ya existe un registro de asistencia para este profesor, materia y fecha.' });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'Error al validar duplicidad: ' + err.message });
   }
 
   const sql = `UPDATE asistencias SET

@@ -133,7 +133,7 @@ body {
 /* Main Grid Layout */
 .app-main {
   display: grid;
-  grid-template-columns: 460px 1fr;
+  grid-template-columns: 460px minmax(0, 1fr);
   gap: 24px;
   align-items: start;
   flex: 1;

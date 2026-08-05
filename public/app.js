@@ -66,6 +66,10 @@ const attendanceTbody = document.getElementById('attendance-tbody');
 const exportCsvBtn = document.getElementById('export-csv-btn');
 const exportJsonBtn = document.getElementById('export-json-btn');
 
+// Filtro de fecha
+const filterDateInput = document.getElementById('filter-date');
+const clearFilterBtn = document.getElementById('clear-filter-btn');
+
 // Toast Notification
 const toast = document.getElementById('toast-notification');
 const toastMessage = document.getElementById('toast-message');
@@ -476,6 +480,13 @@ function registrarEventListeners() {
   // Exportaciones
   exportCsvBtn.addEventListener('click', exportarCSV);
   exportJsonBtn.addEventListener('click', exportarJSON);
+
+  // Filtro de Fecha
+  filterDateInput.addEventListener('input', renderTablaAsistencias);
+  clearFilterBtn.addEventListener('click', () => {
+    filterDateInput.value = '';
+    renderTablaAsistencias();
+  });
 
   // --- LÓGICA DEL MODAL DE ADMINISTRACIÓN ---
 
@@ -1248,17 +1259,29 @@ async function deleteAsistencia(id) {
 
 // Pintar tabla en el frontend (con badge de Gestión Académica)
 function renderTablaAsistencias() {
-  if (asistenciasData.length === 0) {
+  const filterDate = filterDateInput.value;
+  
+  if (filterDate) {
+    clearFilterBtn.style.display = 'flex';
+  } else {
+    clearFilterBtn.style.display = 'none';
+  }
+
+  const dataFiltrada = filterDate
+    ? asistenciasData.filter(a => a.fecha === filterDate)
+    : asistenciasData;
+
+  if (dataFiltrada.length === 0) {
     attendanceTbody.innerHTML = `
       <tr class="empty-row">
-        <td colspan="10">No hay registros de asistencia guardados.</td>
+        <td colspan="10">${filterDate ? 'No hay registros de asistencia para la fecha seleccionada.' : 'No hay registros de asistencia guardados.'}</td>
       </tr>
     `;
     return;
   }
 
   attendanceTbody.innerHTML = '';
-  asistenciasData.forEach(item => {
+  dataFiltrada.forEach(item => {
     const tr = document.createElement('tr');
     
     const fechaPartes = item.fecha.split('-');

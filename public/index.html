@@ -262,6 +262,18 @@
             <i data-lucide="list"></i>
             <h2>Historial de Asistencia</h2>
           </div>
+
+          <!-- Filtro de Fecha -->
+          <div class="table-filter-group">
+            <label for="filter-date"><i data-lucide="calendar"></i> Filtrar Fecha:</label>
+            <div class="filter-input-wrapper">
+              <input type="date" id="filter-date">
+              <button id="clear-filter-btn" class="clear-filter-btn" style="display: none;" title="Limpiar filtro">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          </div>
+
           <div class="export-buttons">
             <button id="export-csv-btn" class="export-btn csv">
               <i data-lucide="file-spreadsheet"></i> Exportar CSV

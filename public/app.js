@@ -70,6 +70,10 @@ const exportJsonBtn = document.getElementById('export-json-btn');
 const filterDateInput = document.getElementById('filter-date');
 const clearFilterBtn = document.getElementById('clear-filter-btn');
 
+// Conmutador de tema
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
+const themeToggleIcon = document.getElementById('theme-toggle-icon');
+
 // Toast Notification
 const toast = document.getElementById('toast-notification');
 const toastMessage = document.getElementById('toast-message');
@@ -118,6 +122,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
+  // 0. Cargar preferencia de tema (Claro/Oscuro)
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+    themeToggleIcon.setAttribute('data-lucide', 'moon');
+  } else {
+    document.body.classList.remove('light-theme');
+    themeToggleIcon.setAttribute('data-lucide', 'sun');
+  }
+
   // 1. Establecer fecha de hoy
   const hoy = new Date();
   const yyyy = hoy.getFullYear();
@@ -486,6 +500,19 @@ function registrarEventListeners() {
   clearFilterBtn.addEventListener('click', () => {
     filterDateInput.value = '';
     renderTablaAsistencias();
+  });
+
+  // Conmutador de Tema (Theme Toggle)
+  themeToggleBtn.addEventListener('click', () => {
+    const isLight = document.body.classList.toggle('light-theme');
+    if (isLight) {
+      localStorage.setItem('theme', 'light');
+      themeToggleIcon.setAttribute('data-lucide', 'moon');
+    } else {
+      localStorage.setItem('theme', 'dark');
+      themeToggleIcon.setAttribute('data-lucide', 'sun');
+    }
+    lucide.createIcons();
   });
 
   // --- LÓGICA DEL MODAL DE ADMINISTRACIÓN ---

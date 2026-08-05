@@ -31,6 +31,42 @@
   
   --font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Variables específicas de sub-componentes (Tema Oscuro por defecto) */
+  --table-bg: rgba(15, 23, 42, 0.4);
+  --table-border: rgba(255, 255, 255, 0.05);
+  --thead-bg: rgba(15, 23, 42, 0.8);
+  --stat-box-bg: rgba(255, 255, 255, 0.02);
+  --stat-box-border: rgba(255, 255, 255, 0.05);
+  --badge-bg: rgba(255, 255, 255, 0.05);
+  --modal-bg: #1e293b;
+  --modal-border: rgba(255, 255, 255, 0.1);
+}
+
+/* --- RE-DEFINICIÓN DE VARIABLES PARA TEMA CLARO --- */
+body.light-theme {
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+  --panel-bg: rgba(255, 255, 255, 0.75);
+  --panel-border: rgba(15, 23, 42, 0.08);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  
+  --input-bg: rgba(255, 255, 255, 0.95);
+  --input-border: rgba(15, 23, 42, 0.12);
+  
+  --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  --shadow-glow: 0 0 15px rgba(59, 130, 246, 0.12);
+  
+  --table-bg: rgba(255, 255, 255, 0.7);
+  --table-border: rgba(15, 23, 42, 0.06);
+  --thead-bg: rgba(241, 245, 249, 0.9);
+  --stat-box-bg: rgba(15, 23, 42, 0.02);
+  --stat-box-border: rgba(15, 23, 42, 0.06);
+  --badge-bg: rgba(15, 23, 42, 0.05);
+  --modal-bg: #ffffff;
+  --modal-border: rgba(15, 23, 42, 0.1);
 }
 
 /* Reset y Estilos Generales */
@@ -512,8 +548,8 @@ textarea {
 }
 
 .stat-box {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--stat-box-bg);
+  border: 1px solid var(--stat-box-border);
   border-radius: var(--border-radius-md);
   padding: 16px;
   display: flex;
@@ -523,9 +559,10 @@ textarea {
 }
 
 .stat-box:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--stat-box-bg);
+  opacity: 0.85;
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--primary-color);
 }
 
 .stat-icon {
@@ -625,12 +662,11 @@ textarea {
 .export-btn.csv i { color: var(--accent-green); }
 .export-btn.json i { color: var(--primary-color); }
 
-/* Tabla Wrapper */
 .table-wrapper {
   overflow-x: auto;
   border-radius: var(--border-radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--table-border);
+  background: var(--table-bg);
   max-height: 480px;
 }
 
@@ -642,7 +678,7 @@ table {
 }
 
 thead {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--thead-bg);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -926,10 +962,10 @@ tr:hover:not(.empty-row) {
 
 /* Modal Card */
 .modal-card {
-  background: #1e293b;
-  border: 1px solid var(--panel-border);
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
   border-radius: var(--border-radius-lg);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   width: 90%;
   max-width: 600px;
   max-height: 85vh;
@@ -1334,3 +1370,41 @@ tr:hover:not(.empty-row) {
 
 
 
+/* --- BOTÓN CONMUTADOR DE TEMA (THEME TOGGLE) --- */
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-glow);
+  transform: scale(1.05);
+}
+
+.theme-toggle-btn i {
+  width: 17px;
+  height: 17px;
+  color: var(--text-primary);
+}
+
+/* Modificar en tema claro el fondo del botón de tema */
+body.light-theme .theme-toggle-btn {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme .theme-toggle-btn:hover {
+  background: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.12);
+}

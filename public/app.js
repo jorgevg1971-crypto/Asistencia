@@ -1175,7 +1175,8 @@ function editarAsistencia(id) {
 
   // Cargar campos básicos
   fechaInput.value = item.fecha;
-  gestionSelect.value = item.gestion_id || "";
+  const activa = maestrosData.gestiones.find(g => g.activa === 1);
+  gestionSelect.value = item.gestion_id || (activa ? activa.id : "");
 
   docenteBuscarInput.value = item.docente_nombre;
   docenteIdInput.value = item.docente_id;
@@ -1406,6 +1407,11 @@ async function handleFormSubmit(e) {
   } finally {
     submitBtn.disabled = false;
     btnSpinner.style.display = 'none';
+    if (asistenciaEditId !== null) {
+      submitBtn.querySelector('.btn-text').textContent = 'Guardar Cambios';
+    } else {
+      submitBtn.querySelector('.btn-text').textContent = 'Registrar Asistencia';
+    }
   }
 }
 

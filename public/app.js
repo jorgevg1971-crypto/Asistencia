@@ -1405,6 +1405,13 @@ function editarAsistencia(id) {
   const item = asistenciasData.find(a => a.id === id);
   if (!item) return;
 
+  // Si está en modo pantalla completa, salir de él para poder editar
+  if (dataCard.classList.contains('fullscreen-mode')) {
+    dataCard.classList.remove('fullscreen-mode');
+    fullscreenIcon.setAttribute('data-lucide', 'maximize-2');
+    fullscreenBtn.setAttribute('title', 'Ampliar a pantalla completa');
+  }
+
   // Cargar campos básicos
   fechaInput.value = item.fecha;
   const activa = maestrosData.gestiones.find(g => g.activa === 1);

@@ -372,6 +372,60 @@ const normalizeText = (text) => {
     .replace(/[\u0300-\u036f]/g, "");
 };
 
+// Algoritmo fonético simplificado para el español
+function obtenerCodigoFonetico(texto) {
+  if (!texto) return '';
+  // 1. Normalizar texto y limpiar caracteres no alfabéticos
+  let s = normalizeText(texto).replace(/[^a-zñ\s]/g, '');
+  
+  // 2. Equivalencias fonéticas del español
+  s = s.replace(/([^c]|^)h/g, '$1'); // h muda (excepto ch)
+  s = s.replace(/ll/g, 'y');          // ll -> y
+  s = s.replace(/[vw]/g, 'b');        // v, w -> b
+  s = s.replace(/z/g, 's');           // z -> s
+  s = s.replace(/c([ei])/g, 's$1');   // ce, ci -> se, si
+  s = s.replace(/x/g, 'j');           // x -> j (México, Ximena)
+  s = s.replace(/y/g, 'i');           // y -> i
+  
+  s = s.replace(/c([aou])/g, 'k$1');  // ca, co, cu -> ka, ko, ku
+  s = s.replace(/q/g, 'k');           // q -> k
+  s = s.replace(/c([^aeiou]|$)/g, 'k$1'); // c antes de consonante o final -> k
+  
+  s = s.replace(/g([ei])/g, 'j$1');   // ge, gi -> je, ji
+  s = s.replace(/gu([ei])/g, 'g$1');  // gue, gui -> ge, gi
+  
+  // 3. Eliminar caracteres repetidos consecutivos
+  let res = '';
+  for (let i = 0; i < s.length; i++) {
+    if (i === 0 || s[i] !== s[i - 1] || s[i] === ' ') {
+      res += s[i];
+    }
+  }
+  
+  return res.replace(/\s+/g, ' ').trim();
+}
+
+// Algoritmo de distancia Levenshtein
+function calcularDistanciaLevenshtein(a, b) {
+  const tmp = [];
+  for (let i = 0; i <= a.length; i++) {
+    tmp[i] = [i];
+  }
+  for (let j = 0; j <= b.length; j++) {
+    tmp[0][j] = j;
+  }
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      tmp[i][j] = Math.min(
+        tmp[i - 1][j] + 1,
+        tmp[i][j - 1] + 1,
+        tmp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+  }
+  return tmp[a.length][b.length];
+}
+
 // Función genérica para implementar autocompletado en un input
 function setupAutocomplete({
   inputElement,
@@ -921,15 +975,29 @@ function registrarEventListeners() {
     const nombre = newDocenteNombre.value.trim();
     if (!nombre) return;
 
-    // Validar similitud de nombres antes de permitir el ingreso
+    // Validar similitud fonética y de Levenshtein antes de permitir el ingreso
     const nombreNormalizado = normalizeText(nombre);
+    const codigoFonetico = obtenerCodigoFonetico(nombre);
+    
     const duplicadoCercano = maestrosData.docentes.find(d => {
       if (docenteEditId !== null && d.id === docenteEditId) return false;
-      return normalizeText(d.nombre) === nombreNormalizado;
+      
+      const dNormalizado = normalizeText(d.nombre);
+      const dFonetico = obtenerCodigoFonetico(d.nombre);
+
+      // 1. Coincidencia fonética directa (Soundex simplificado español)
+      if (dFonetico === codigoFonetico) return true;
+
+      // 2. Coincidencia Levenshtein (edición leve de 1 o 2 letras)
+      const limiteDistancia = dNormalizado.length > 5 ? 2 : 1;
+      const distancia = calcularDistanciaLevenshtein(nombreNormalizado, dNormalizado);
+      if (distancia <= limiteDistancia) return true;
+
+      return false;
     });
 
     if (duplicadoCercano) {
-      const confirmar = confirm(`Ya existe un docente registrado con un nombre muy similar: "${duplicadoCercano.nombre}".\n\n¿Está seguro de que desea registrar a "${nombre}" de todas formas?`);
+      const confirmar = confirm(`Ya existe un docente registrado con un nombre muy similar o fonéticamente idéntico: "${duplicadoCercano.nombre}".\n\n¿Está seguro de que desea registrar a "${nombre}" de todas formas?`);
       if (!confirmar) {
         return; // Detiene el flujo
       }

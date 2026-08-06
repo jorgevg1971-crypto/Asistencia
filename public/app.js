@@ -417,7 +417,7 @@ function setupAutocomplete({
       filteredItems = [...currentList];
       suggestionsContainer.innerHTML = '';
       
-      filteredItems.slice(0, 10).forEach((item, index) => {
+      filteredItems.forEach((item, index) => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'suggestion-item';
         itemDiv.dataset.index = index;

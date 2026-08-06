@@ -28,6 +28,14 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- Indicador de Usuario Logueado -->
+        <div class="user-badge" id="user-badge" style="display: none;">
+          <i data-lucide="user"></i>
+          <span id="active-user-name">Invitado</span>
+          <button id="logout-btn" class="logout-btn" title="Cerrar sesión">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
         <div class="date-badge">
           <i data-lucide="calendar"></i>
           <span id="current-date-badge">-</span>
@@ -292,9 +300,24 @@
             <button id="export-csv-btn" class="export-btn csv">
               <i data-lucide="file-spreadsheet"></i> Exportar CSV
             </button>
-            <button id="export-json-btn" class="export-btn json">
-              <i data-lucide="file-json"></i> Exportar JSON
-            </button>
+            <div class="columns-selector-container">
+              <button id="toggle-columns-btn" class="export-btn columns-btn" title="Configurar columnas visibles">
+                <i data-lucide="eye"></i> Columnas
+              </button>
+              <div id="columns-dropdown-menu" class="columns-dropdown-menu" style="display: none;">
+                <h4>Visualizar Columnas</h4>
+                <label><input type="checkbox" data-col="col-fecha" checked> Fecha</label>
+                <label><input type="checkbox" data-col="col-docente" checked> Docente</label>
+                <label><input type="checkbox" data-col="col-materia" checked> Materia</label>
+                <label><input type="checkbox" data-col="col-programa" checked> Programa</label>
+                <label><input type="checkbox" data-col="col-dicto" checked> Dictó</label>
+                <label><input type="checkbox" data-col="col-mod" checked> Mod.</label>
+                <label><input type="checkbox" data-col="col-horarios" checked> Horarios (Ini/Fin)</label>
+                <label><input type="checkbox" data-col="col-idioma" checked> Idioma</label>
+                <label><input type="checkbox" data-col="col-comentarios" checked> Comentarios</label>
+                <label><input type="checkbox" data-col="col-usuario"> Creado por</label>
+              </div>
+            </div>
             <button id="fullscreen-btn" class="fullscreen-btn" title="Ampliar a pantalla completa">
               <i data-lucide="maximize-2" id="fullscreen-icon"></i>
             </button>
@@ -305,16 +328,17 @@
           <table id="attendance-table">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Docente</th>
-                <th>Materia</th>
-                <th>Programa</th>
-                <th>Dictó</th>
-                <th>Mod.</th>
-                <th>Horarios (Ini / Fin)</th>
-                <th>Idioma</th>
-                <th>Comentarios</th>
-                <th class="actions-col">Acción</th>
+                <th class="col-fecha">Fecha</th>
+                <th class="col-docente">Docente</th>
+                <th class="col-materia">Materia</th>
+                <th class="col-programa">Programa</th>
+                <th class="col-dicto">Dictó</th>
+                <th class="col-mod">Mod.</th>
+                <th class="col-horarios">Horarios (Ini / Fin)</th>
+                <th class="col-idioma">Idioma</th>
+                <th class="col-comentarios">Comentarios</th>
+                <th class="col-usuario hidden">Creado por</th>
+                <th class="actions-col col-accion">Acción</th>
               </tr>
             </thead>
             <tbody id="attendance-tbody">
@@ -353,11 +377,11 @@
         </button>
       </div>
       
-      <!-- Pestañas -->
       <div class="modal-tabs">
         <button class="tab-btn active" data-tab="tab-docentes">Docentes</button>
         <button class="tab-btn" data-tab="tab-materias">Materias</button>
         <button class="tab-btn" data-tab="tab-gestiones">Gestiones</button>
+        <button class="tab-btn" data-tab="tab-usuarios">Usuarios</button>
       </div>
       
       <!-- Contenido Pestañas -->
@@ -478,7 +502,58 @@
           </div>
         </div>
 
+        <!-- Pestaña Usuarios -->
+        <div id="tab-usuarios" class="tab-content animate-fade" style="display: none;">
+          <form id="new-usuario-form" class="admin-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="new_usuario_username">Nombre de Usuario</label>
+                <input type="text" id="new_usuario_username" placeholder="Ej. jperez" required autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="new_usuario_password">Contraseña</label>
+                <input type="password" id="new_usuario_password" placeholder="Mínimo 4 caracteres" required autocomplete="off">
+              </div>
+            </div>
+            <button type="submit" class="admin-submit-btn-full" id="usuario-submit-btn" style="margin-top: 12px;">Crear Usuario</button>
+          </form>
+          
+          <div class="admin-list-container" style="margin-top: 16px;">
+            <h3>Usuarios Registrados</h3>
+            <ul id="admin-usuarios-list" class="admin-items-list">
+              <!-- Cargado dinámicamente -->
+            </ul>
+          </div>
+        </div>
+
       </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de Login (Overlay) -->
+  <div id="login-overlay" class="login-overlay">
+    <div class="login-card">
+      <div class="login-logo-area">
+        <div class="login-logo-icon">
+          <i data-lucide="check-square"></i>
+        </div>
+        <h1>ePC Asistencia</h1>
+        <p class="login-subtitle">Sistema de Control de Asistencia de Docentes</p>
+      </div>
+      <form id="login-form" class="login-form">
+        <div class="form-group">
+          <label for="login_username"><i data-lucide="user"></i> Usuario</label>
+          <input type="text" id="login_username" placeholder="Nombre de usuario" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="login_password"><i data-lucide="lock"></i> Contraseña</label>
+          <input type="password" id="login_password" placeholder="Contraseña de acceso" required autocomplete="off">
+        </div>
+        <button type="submit" class="login-submit-btn" id="login-submit-btn">
+          <span class="btn-text">Iniciar Sesión</span>
+          <span class="btn-spinner" id="login-spinner" style="display: none;"></span>
+        </button>
+      </form>
     </div>
   </div>
 

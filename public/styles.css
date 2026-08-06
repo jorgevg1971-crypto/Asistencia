@@ -1536,3 +1536,213 @@ body.light-theme .fullscreen-btn:hover i {
 .data-card.fullscreen-mode .table-wrapper {
   max-height: calc(100vh - 250px) !important;
 }
+
+/* --- LOGIN OVERLAY PANTALLA COMPLETA --- */
+.login-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-gradient);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100000;
+  backdrop-filter: blur(10px);
+}
+
+.login-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-lg);
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  backdrop-filter: blur(15px);
+  animation: modalScaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.login-logo-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.login-logo-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  border-radius: var(--border-radius-md);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: var(--shadow-glow);
+}
+
+.login-logo-icon i {
+  width: 32px;
+  height: 32px;
+}
+
+.login-card h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(to right, #3b82f6, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.light-theme .login-card h1 {
+  background: linear-gradient(to right, #0f172a, #4338ca);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-submit-btn {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+  margin-top: 10px;
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.login-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* --- INDICADOR DE USUARIO EN EL HEADER --- */
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--stat-box-bg);
+  border: 1px solid var(--panel-border);
+  padding: 8px 14px;
+  border-radius: var(--border-radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: var(--transition-smooth);
+}
+
+.user-badge i {
+  color: var(--primary-color);
+  width: 15px;
+  height: 15px;
+}
+
+.logout-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+  margin-left: 6px;
+  border-radius: 4px;
+}
+
+.logout-btn:hover {
+  color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* --- SELECTOR DE COLUMNAS FLOTANTE --- */
+.columns-selector-container {
+  position: relative;
+  display: inline-block;
+}
+
+.columns-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--modal-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 16px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.columns-dropdown-menu h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.columns-dropdown-menu label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-smooth);
+}
+
+.columns-dropdown-menu label:hover {
+  color: var(--text-primary);
+}
+
+.columns-dropdown-menu input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+/* Ocultar columnas en la tabla */
+.hidden {
+  display: none !important;
+}

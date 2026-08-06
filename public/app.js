@@ -67,7 +67,6 @@ const attendanceTbody = document.getElementById('attendance-tbody');
 
 // Botones de exportación
 const exportCsvBtn = document.getElementById('export-csv-btn');
-const exportJsonBtn = document.getElementById('export-json-btn');
 
 // Filtro de fecha
 const filterDateInput = document.getElementById('filter-date');
@@ -137,10 +136,49 @@ const gestionSubmitBtn = document.getElementById('gestion-submit-btn');
 const cancelGestionEditBtn = document.getElementById('cancel-gestion-edit-btn');
 const adminGestionesList = document.getElementById('admin-gestiones-list');
 
+// Usuarios Admin & Login
+const loginOverlay = document.getElementById('login-overlay');
+const loginForm = document.getElementById('login-form');
+const loginUsernameInput = document.getElementById('login_username');
+const loginPasswordInput = document.getElementById('login_password');
+const loginSubmitBtn = document.getElementById('login-submit-btn');
+const loginSpinner = document.getElementById('login-spinner');
+const userBadge = document.getElementById('user-badge');
+const activeUserName = document.getElementById('active-user-name');
+const logoutBtn = document.getElementById('logout-btn');
+
+const newUsuarioForm = document.getElementById('new-usuario-form');
+const newUsuarioUsername = document.getElementById('new_usuario_username');
+const newUsuarioPassword = document.getElementById('new_usuario_password');
+const adminUsuariosList = document.getElementById('admin-usuarios-list');
+
+// Selector de Columnas Visibles
+const toggleColumnsBtn = document.getElementById('toggle-columns-btn');
+const columnsDropdownMenu = document.getElementById('columns-dropdown-menu');
+
 // Inicialización de la Aplicación
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
+
+// Control de sesión del usuario
+let activeUser = null;
+
+function verificarSesion() {
+  const userJson = localStorage.getItem('activeUser');
+  if (userJson) {
+    activeUser = JSON.parse(userJson);
+    activeUserName.textContent = activeUser.username;
+    userBadge.style.display = 'flex';
+    loginOverlay.style.display = 'none';
+    return true;
+  } else {
+    activeUser = null;
+    userBadge.style.display = 'none';
+    loginOverlay.style.display = 'flex';
+    return false;
+  }
+}
 
 async function initApp() {
   // 0. Cargar preferencia de tema (Claro/Oscuro)
@@ -167,20 +205,34 @@ async function initApp() {
   const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   currentDateBadge.textContent = hoy.toLocaleDateString('es-ES', opcionesFecha);
 
-  // 2. Cargar datos maestros (docentes, materias y gestiones)
-  await cargarDatosMaestros();
-
-  // 3. Inicializar autocompletados
-  setupAutocompletes();
-
-  // 4. Cargar historial de asistencias
-  await cargarAsistencias();
-
-  // 5. Registrar Event Listeners generales y de administración
+  // Registrar Event Listeners generales y de administración (siempre)
   registrarEventListeners();
+
+  // Verificar autenticación
+  const autenticado = verificarSesion();
+  if (autenticado) {
+    await continuarInicializacion();
+  }
   
   // Re-inicializar iconos de Lucide
   lucide.createIcons();
+}
+
+async function continuarInicializacion() {
+  // Cargar datos maestros
+  await cargarDatosMaestros();
+
+  // Inicializar autocompletados
+  setupAutocompletes();
+
+  // Cargar historial de asistencias
+  await cargarAsistencias();
+
+  // Cargar usuarios registrados en el panel
+  await cargarUsuariosAdmin();
+
+  // Inicializar visibilidad de columnas
+  inicializarSelectorColumnas();
 }
 
 // Cargar docentes, materias y gestiones académicas del Backend
@@ -500,6 +552,96 @@ async function cargarAsistencias() {
 
 // Configuración de event listeners
 function registrarEventListeners() {
+  // --- Event Listeners de Login & Sesión ---
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginSubmitBtn.disabled = true;
+      loginSpinner.style.display = 'inline-block';
+      
+      const username = loginUsernameInput.value.trim();
+      const password = loginPasswordInput.value;
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error || 'Error al iniciar sesión');
+        
+        localStorage.setItem('activeUser', JSON.stringify(data));
+        showToast(`Sesión iniciada como ${data.username}`, 'success');
+        
+        // Verificar sesión y cargar datos de app
+        verificarSesion();
+        await continuarInicializacion();
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        loginSubmitBtn.disabled = false;
+        loginSpinner.style.display = 'none';
+      }
+    });
+  }
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('¿Desea cerrar la sesión actual?')) {
+        localStorage.removeItem('activeUser');
+        showToast('Sesión cerrada', 'info');
+        verificarSesion();
+      }
+    });
+  }
+
+  // --- Event Listeners de Creación de Usuarios (Admin) ---
+  if (newUsuarioForm) {
+    newUsuarioForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = newUsuarioUsername.value.trim();
+      const password = newUsuarioPassword.value;
+
+      if (password.length < 4) {
+        showToast('La contraseña debe tener al menos 4 caracteres', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/usuarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al registrar usuario');
+        
+        showToast(`Usuario "${data.username}" creado con éxito`, 'success');
+        newUsuarioForm.reset();
+        await cargarUsuariosAdmin();
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    });
+  }
+
+  // --- Event Listeners de Visualización de Columnas ---
+  if (toggleColumnsBtn && columnsDropdownMenu) {
+    toggleColumnsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = columnsDropdownMenu.style.display === 'block';
+      columnsDropdownMenu.style.display = isVisible ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!toggleColumnsBtn.contains(e.target) && !columnsDropdownMenu.contains(e.target)) {
+        columnsDropdownMenu.style.display = 'none';
+      }
+    });
+  }
+
   // Mostrar/Ocultar detalles de clase según "Dicto clases"
   const toggleClaseDetails = () => {
     if (dictoSiRadio.checked) {
@@ -555,7 +697,6 @@ function registrarEventListeners() {
 
   // Exportaciones
   exportCsvBtn.addEventListener('click', exportarCSV);
-  exportJsonBtn.addEventListener('click', exportarJSON);
 
   // Desbloqueo secreto de Programa de Carrera (Triple Clic)
   programaInput.addEventListener('click', (e) => {
@@ -1364,7 +1505,12 @@ async function handleFormSubmit(e) {
     final_clase: finalClaseSelect.value,
     minutos_final: minutosFinalInput.value || 0,
     idioma_dictado: idiomaDictadoSelect.value,
-    comentarios: comentariosTextarea.value.trim()
+    comentarios: comentariosTextarea.value.trim(),
+    // Campos de Auditoría
+    creado_por_usuario_id: activeUser ? activeUser.id : null,
+    creado_por_usuario_nombre: activeUser ? activeUser.username : null,
+    editado_por_usuario_id: activeUser ? activeUser.id : null,
+    editado_por_usuario_nombre: activeUser ? activeUser.username : null
   };
 
   // Mostrar loading
@@ -1548,22 +1694,31 @@ function renderTablaAsistencias() {
       }
     }
 
+    const creadorStr = item.creado_por_usuario_nombre || 'Sistema';
+    const editorStr = item.editado_por_usuario_nombre ? `<span style="font-size: 9px; opacity: 0.8; display: block; margin-top: 2px;"><i data-lucide="edit-2" style="width: 8px; height: 8px; margin-right: 3px;"></i>${item.editado_por_usuario_nombre}</span>` : '';
+
     tr.innerHTML = `
-      <td><strong>${fechaFormateada}</strong></td>
-      <td>${item.docente_nombre}</td>
-      <td>${item.materia_nombre}${item.reposicion === 'SI' ? ' <span class="badge puntual" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding:2px 6px; font-size:9px; border: 1px solid rgba(245, 158, 11, 0.2); gap: 2px;" title="Clase de Reposición"><i data-lucide="refresh-cw" style="width:8px; height:8px;"></i> REP</span>' : ''}</td>
-      <td>
+      <td class="col-fecha"><strong>${fechaFormateada}</strong></td>
+      <td class="col-docente">${item.docente_nombre}</td>
+      <td class="col-materia">${item.materia_nombre}${item.reposicion === 'SI' ? ' <span class="badge puntual" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding:2px 6px; font-size:9px; border: 1px solid rgba(245, 158, 11, 0.2); gap: 2px;" title="Clase de Reposición"><i data-lucide="refresh-cw" style="width:8px; height:8px;"></i> REP</span>' : ''}</td>
+      <td class="col-programa">
         <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
           <span class="badge esp">${item.programa}</span>
           <span style="font-size: 10px; color: var(--text-muted); font-weight: 500; white-space: nowrap;">${item.gestion_nombre}</span>
         </div>
       </td>
-      <td>${dictoBadge}</td>
-      <td>${modCell}</td>
-      <td>${horariosCell}</td>
-      <td>${idiomaCell}</td>
-      <td><div class="cell-comments" title="${item.comentarios || ''}">${item.comentarios || '<span style="color:var(--text-muted)">-</span>'}</div></td>
-      <td class="actions-col">
+      <td class="col-dicto">${dictoBadge}</td>
+      <td class="col-mod">${modCell}</td>
+      <td class="col-horarios">${horariosCell}</td>
+      <td class="col-idioma">${idiomaCell}</td>
+      <td class="col-comentarios"><div class="cell-comments" title="${item.comentarios || ''}">${item.comentarios || '<span style="color:var(--text-muted)">-</span>'}</div></td>
+      <td class="col-usuario">
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start; font-size: 11px; white-space: nowrap;">
+          <span style="display: flex; align-items: center; gap: 4px;"><i data-lucide="user-plus" style="width: 10px; height: 10px; color: var(--primary-color);"></i> ${creadorStr}</span>
+          ${editorStr}
+        </div>
+      </td>
+      <td class="actions-col col-accion">
         <div style="display: flex; gap: 6px; justify-content: center;">
           <button class="delete-btn" onclick="editarAsistencia(${item.id})" title="Editar registro" style="color: var(--primary-color); background: rgba(59, 130, 246, 0.1);">
             <i data-lucide="edit-3"></i>
@@ -1577,6 +1732,9 @@ function renderTablaAsistencias() {
     
     attendanceTbody.appendChild(tr);
   });
+
+  // Sincronizar visibilidad de columnas basada en checkboxes
+  sincronizarVisibilidadColumnas();
 
   lucide.createIcons();
 }
@@ -1667,17 +1825,6 @@ function exportarCSV() {
   descargarArchivo(csvContent, 'text/csv;charset=utf-8;', 'asistencia_docentes.csv');
 }
 
-// Exportación a JSON
-function exportarJSON() {
-  if (asistenciasData.length === 0) {
-    showToast('No hay datos disponibles para exportar', 'info');
-    return;
-  }
-
-  const jsonString = JSON.stringify(asistenciasData, null, 2);
-  descargarArchivo(jsonString, 'application/json;charset=utf-8;', 'asistencia_docentes.json');
-}
-
 // Descargar archivo en el navegador
 function descargarArchivo(contenido, mimeType, nombreArchivo) {
   const blob = new Blob([contenido], { type: mimeType });
@@ -1692,4 +1839,101 @@ function descargarArchivo(contenido, mimeType, nombreArchivo) {
   link.click();
   document.body.removeChild(link);
   showToast(`Archivo ${nombreArchivo} descargado`, 'success');
+}
+
+// --- Gestión de Usuarios (Panel Administrativo) ---
+
+// Cargar listado de usuarios
+async function cargarUsuariosAdmin() {
+  try {
+    const res = await fetch('/api/usuarios');
+    if (!res.ok) throw new Error('Error al conectar con la API de usuarios');
+    const usuarios = await res.json();
+    
+    adminUsuariosList.innerHTML = '';
+    usuarios.forEach(user => {
+      const li = document.createElement('li');
+      li.className = 'admin-item';
+      
+      const textSpan = document.createElement('span');
+      textSpan.className = 'admin-item-text';
+      textSpan.innerHTML = `<i data-lucide="user" style="width: 14px; height: 14px; margin-right: 6px; color: var(--primary-color);"></i> <strong>${user.username}</strong> ${user.id === 1 ? '<span class="badge puntual" style="font-size: 9px; padding: 2px 6px; margin-left: 6px; background: rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.2);">ADMIN</span>' : ''}`;
+      
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'admin-item-actions';
+      
+      // Botón eliminar (No permitir eliminar al administrador Jorge con ID 1)
+      if (user.id !== 1) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'admin-btn-delete';
+        deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
+        deleteBtn.title = 'Eliminar usuario';
+        deleteBtn.onclick = () => eliminarUsuarioAdmin(user.id);
+        actionsDiv.appendChild(deleteBtn);
+      }
+      
+      li.appendChild(textSpan);
+      li.appendChild(actionsDiv);
+      adminUsuariosList.appendChild(li);
+    });
+    lucide.createIcons();
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+// Eliminar un usuario
+async function eliminarUsuarioAdmin(id) {
+  if (!confirm('¿Está seguro de que desea eliminar este usuario de la aplicación?')) return;
+  try {
+    const res = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al eliminar usuario');
+    
+    showToast('Usuario eliminado correctamente', 'success');
+    await cargarUsuariosAdmin();
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+// --- Selector de Columnas Visibles ---
+
+// Inicializar checkboxes y visibilidad por defecto
+function inicializarSelectorColumnas() {
+  const checkboxes = columnsDropdownMenu.querySelectorAll('input[type="checkbox"]');
+  
+  checkboxes.forEach(cb => {
+    const colClass = cb.getAttribute('data-col');
+    // Aplicar estado del checkbox a las celdas
+    alternarColumnaVisible(colClass, cb.checked);
+    
+    // Escuchar cambios
+    cb.onchange = (e) => {
+      alternarColumnaVisible(colClass, e.target.checked);
+    };
+  });
+}
+
+// Alternar visibilidad de las celdas de una columna
+function alternarColumnaVisible(colClass, visible) {
+  // Buscar todas las celdas de cabecera y cuerpo correspondientes
+  const cells = document.querySelectorAll(`.${colClass}`);
+  cells.forEach(cell => {
+    if (visible) {
+      cell.classList.remove('hidden');
+    } else {
+      cell.classList.add('hidden');
+    }
+  });
+}
+
+// Sincronizar visibilidad de columnas basada en checkboxes
+function sincronizarVisibilidadColumnas() {
+  if (!columnsDropdownMenu) return;
+  const checkboxes = columnsDropdownMenu.querySelectorAll('input[type="checkbox"]');
+  checkboxes.forEach(cb => {
+    const colClass = cb.getAttribute('data-col');
+    alternarColumnaVisible(colClass, cb.checked);
+  });
 }

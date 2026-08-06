@@ -921,6 +921,20 @@ function registrarEventListeners() {
     const nombre = newDocenteNombre.value.trim();
     if (!nombre) return;
 
+    // Validar similitud de nombres antes de permitir el ingreso
+    const nombreNormalizado = normalizeText(nombre);
+    const duplicadoCercano = maestrosData.docentes.find(d => {
+      if (docenteEditId !== null && d.id === docenteEditId) return false;
+      return normalizeText(d.nombre) === nombreNormalizado;
+    });
+
+    if (duplicadoCercano) {
+      const confirmar = confirm(`Ya existe un docente registrado con un nombre muy similar: "${duplicadoCercano.nombre}".\n\n¿Está seguro de que desea registrar a "${nombre}" de todas formas?`);
+      if (!confirmar) {
+        return; // Detiene el flujo
+      }
+    }
+
     try {
       let res, data;
       if (docenteEditId !== null) {

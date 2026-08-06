@@ -145,12 +145,22 @@ const loginSubmitBtn = document.getElementById('login-submit-btn');
 const loginSpinner = document.getElementById('login-spinner');
 const userBadge = document.getElementById('user-badge');
 const activeUserName = document.getElementById('active-user-name');
+const openChangePasswordBtn = document.getElementById('open-change-password-btn');
 const logoutBtn = document.getElementById('logout-btn');
 
 const newUsuarioForm = document.getElementById('new-usuario-form');
 const newUsuarioUsername = document.getElementById('new_usuario_username');
 const newUsuarioPassword = document.getElementById('new_usuario_password');
 const adminUsuariosList = document.getElementById('admin-usuarios-list');
+
+// Modal Cambiar Contraseña
+const passwordModal = document.getElementById('password-modal');
+const closePasswordModalBtn = document.getElementById('close-password-modal-btn');
+const changePasswordForm = document.getElementById('change-password-form');
+const pwdActualInput = document.getElementById('pwd_actual');
+const pwdNuevaInput = document.getElementById('pwd_nueva');
+const pwdConfirmarInput = document.getElementById('pwd_confirmar');
+const pwdSubmitBtn = document.getElementById('pwd-submit-btn');
 
 // Selector de Columnas Visibles
 const toggleColumnsBtn = document.getElementById('toggle-columns-btn');
@@ -623,6 +633,73 @@ function registrarEventListeners() {
         await cargarUsuariosAdmin();
       } catch (error) {
         showToast(error.message, 'error');
+      }
+    });
+  }
+
+  // --- Event Listeners del Modal de Cambio de Contraseña ---
+  if (openChangePasswordBtn && passwordModal) {
+    openChangePasswordBtn.addEventListener('click', () => {
+      changePasswordForm.reset();
+      passwordModal.style.display = 'flex';
+      pwdActualInput.focus();
+    });
+  }
+
+  if (closePasswordModalBtn && passwordModal) {
+    closePasswordModalBtn.addEventListener('click', () => {
+      passwordModal.style.display = 'none';
+    });
+  }
+
+  if (changePasswordForm) {
+    changePasswordForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const password_actual = pwdActualInput.value;
+      const password_nueva = pwdNuevaInput.value;
+      const password_confirmar = pwdConfirmarInput.value;
+
+      if (password_nueva.length < 4) {
+        showToast('La nueva contraseña debe tener al menos 4 caracteres.', 'error');
+        return;
+      }
+
+      if (password_nueva !== password_confirmar) {
+        showToast('Las contraseñas nuevas no coinciden.', 'error');
+        return;
+      }
+
+      if (!activeUser) {
+        showToast('No hay una sesión de usuario activa.', 'error');
+        return;
+      }
+
+      pwdSubmitBtn.disabled = true;
+      pwdSubmitBtn.textContent = 'Actualizando...';
+
+      try {
+        const res = await fetch('/api/usuarios/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            usuario_id: activeUser.id,
+            password_actual,
+            password_nueva
+          })
+        });
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error || 'Error al actualizar contraseña');
+        
+        showToast('Tu contraseña se ha cambiado correctamente', 'success');
+        passwordModal.style.display = 'none';
+        changePasswordForm.reset();
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        pwdSubmitBtn.disabled = false;
+        pwdSubmitBtn.textContent = 'Actualizar Contraseña';
       }
     });
   }

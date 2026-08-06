@@ -74,16 +74,36 @@ const db = new sqlite3.Database(dbPath, (err) => {
         FOREIGN KEY (gestion_id) REFERENCES gestiones(id)
       )`);
 
+      // Crear tabla de usuarios
+      db.run(`CREATE TABLE IF NOT EXISTS usuarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
+      )`);
+
       // Migraciones de base de datos
       db.run("ALTER TABLE asistencias ADD COLUMN reposicion TEXT DEFAULT 'NO'", (err) => {});
       db.run("ALTER TABLE asistencias ADD COLUMN gestion_id INTEGER", (err) => {});
       db.run("ALTER TABLE asistencias ADD COLUMN gestion_nombre TEXT", (err) => {});
+      db.run("ALTER TABLE asistencias ADD COLUMN creado_por_usuario_id INTEGER", (err) => {});
+      db.run("ALTER TABLE asistencias ADD COLUMN creado_por_usuario_nombre TEXT", (err) => {});
+      db.run("ALTER TABLE asistencias ADD COLUMN editado_por_usuario_id INTEGER", (err) => {});
+      db.run("ALTER TABLE asistencias ADD COLUMN editado_por_usuario_nombre TEXT", (err) => {});
 
       // Cargar gestión por defecto 'Sem II - 2026' si está vacía
       db.get("SELECT COUNT(*) as count FROM gestiones", (err, row) => {
         if (!err && row.count === 0) {
           db.run("INSERT INTO gestiones (nombre, activa) VALUES ('Sem II - 2026', 1)", (err) => {
             if (!err) console.log('Gestión por defecto Sem II - 2026 cargada y activada.');
+          });
+        }
+      });
+
+      // Cargar usuario administrador Jorge por defecto si está vacío
+      db.get("SELECT COUNT(*) as count FROM usuarios", (err, row) => {
+        if (!err && row.count === 0) {
+          db.run("INSERT INTO usuarios (username, password) VALUES ('Jorge', 'logitech:1')", (err) => {
+            if (!err) console.log('Usuario administrador por defecto "Jorge" creado con éxito.');
           });
         }
       });
@@ -185,7 +205,9 @@ app.post('/api/asistencias', async (req, res) => {
     final_clase,
     minutos_final,
     idioma_dictado,
-    comentarios
+    comentarios,
+    creado_por_usuario_id,
+    creado_por_usuario_nombre
   } = req.body;
 
   // Validaciones básicas
@@ -196,8 +218,8 @@ app.post('/api/asistencias', async (req, res) => {
   const sql = `INSERT INTO asistencias (
     fecha, docente_id, docente_nombre, materia_id, materia_nombre, programa,
     gestion_id, gestion_nombre, dicto_clases, clase, reposicion, inicio, minutos_atraso, final_clase, minutos_final,
-    idioma_dictado, comentarios
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    idioma_dictado, comentarios, creado_por_usuario_id, creado_por_usuario_nombre
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   const params = [
     fecha,
@@ -216,7 +238,9 @@ app.post('/api/asistencias', async (req, res) => {
     dicto_clases === 'SI' ? final_clase : 'N/A',
     dicto_clases === 'SI' && final_clase !== 'Puntual' ? parseInt(minutos_final) || 0 : 0,
     dicto_clases === 'SI' ? idioma_dictado : 'N/A',
-    comentarios || ''
+    comentarios || '',
+    creado_por_usuario_id ? parseInt(creado_por_usuario_id) : null,
+    creado_por_usuario_nombre || null
   ];
 
   try {
@@ -441,7 +465,9 @@ app.put('/api/asistencias/:id', async (req, res) => {
     final_clase,
     minutos_final,
     idioma_dictado,
-    comentarios
+    comentarios,
+    editado_por_usuario_id,
+    editado_por_usuario_nombre
   } = req.body;
 
   if (!fecha || !docente_id || !docente_nombre || !materia_id || !materia_nombre || !programa || !gestion_id || !gestion_nombre || !dicto_clases) {
@@ -465,7 +491,9 @@ app.put('/api/asistencias/:id', async (req, res) => {
     final_clase = ?,
     minutos_final = ?,
     idioma_dictado = ?,
-    comentarios = ?
+    comentarios = ?,
+    editado_por_usuario_id = ?,
+    editado_por_usuario_nombre = ?
     WHERE id = ?`;
 
   const params = [
@@ -486,6 +514,8 @@ app.put('/api/asistencias/:id', async (req, res) => {
     dicto_clases === 'SI' && final_clase !== 'Puntual' ? parseInt(minutos_final) || 0 : 0,
     dicto_clases === 'SI' ? idioma_dictado : 'N/A',
     comentarios || '',
+    editado_por_usuario_id ? parseInt(editado_por_usuario_id) : null,
+    editado_por_usuario_nombre || null,
     id
   ];
 
@@ -494,6 +524,99 @@ app.put('/api/asistencias/:id', async (req, res) => {
     res.json({ mensaje: 'Asistencia actualizada con éxito' });
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar asistencia: ' + error.message });
+  }
+});
+
+// --- Endpoints de Autenticación & Usuarios ---
+
+// Login de Usuario
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Usuario y contraseña son obligatorios.' });
+  }
+  try {
+    const user = await dbGet("SELECT * FROM usuarios WHERE username = ? AND password = ?", [username.trim(), password]);
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
+    }
+    res.json({ id: user.id, username: user.username });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al iniciar sesión: ' + error.message });
+  }
+});
+
+// Obtener todos los usuarios
+app.get('/api/usuarios', async (req, res) => {
+  try {
+    const users = await dbQueryAll("SELECT id, username FROM usuarios ORDER BY username ASC");
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener usuarios: ' + error.message });
+  }
+});
+
+// Crear nuevo usuario
+app.post('/api/usuarios', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Usuario y contraseña son obligatorios.' });
+  }
+  try {
+    const userExists = await dbGet("SELECT id FROM usuarios WHERE username = ?", [username.trim()]);
+    if (userExists) {
+      return res.status(400).json({ error: 'El nombre de usuario ya está registrado.' });
+    }
+    const result = await dbRun("INSERT INTO usuarios (username, password) VALUES (?, ?)", [username.trim(), password]);
+    res.status(201).json({ id: result.lastID, username: username.trim() });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al registrar usuario: ' + error.message });
+  }
+});
+
+// Eliminar un usuario
+app.delete('/api/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Proteger para no eliminar al usuario "Jorge" (ID 1)
+    if (parseInt(id) === 1) {
+      return res.status(400).json({ error: 'No es posible eliminar al administrador principal "Jorge".' });
+    }
+    
+    // Validar cantidad de usuarios restante
+    const countRow = await dbGet("SELECT COUNT(*) as count FROM usuarios");
+    if (countRow.count <= 1) {
+      return res.status(400).json({ error: 'No se puede eliminar el único usuario restante.' });
+    }
+
+    await dbRun("DELETE FROM usuarios WHERE id = ?", [id]);
+    res.json({ mensaje: 'Usuario eliminado con éxito' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar usuario: ' + error.message });
+  }
+});
+
+// Cambiar contraseña de un usuario
+app.post('/api/usuarios/change-password', async (req, res) => {
+  const { usuario_id, password_actual, password_nueva } = req.body;
+  if (!usuario_id || !password_actual || !password_nueva) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
+  }
+  try {
+    const user = await dbGet("SELECT * FROM usuarios WHERE id = ?", [usuario_id]);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+    if (user.password !== password_actual) {
+      return res.status(401).json({ error: 'La contraseña actual es incorrecta.' });
+    }
+    if (password_nueva.trim().length < 4) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 4 caracteres.' });
+    }
+    await dbRun("UPDATE usuarios SET password = ? WHERE id = ?", [password_nueva.trim(), usuario_id]);
+    res.json({ mensaje: 'Contraseña actualizada con éxito.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al cambiar contraseña: ' + error.message });
   }
 });
 

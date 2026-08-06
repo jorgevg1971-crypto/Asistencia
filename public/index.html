@@ -32,6 +32,9 @@
         <div class="user-badge" id="user-badge" style="display: none;">
           <i data-lucide="user"></i>
           <span id="active-user-name">Invitado</span>
+          <button id="open-change-password-btn" class="logout-btn" title="Cambiar mi contraseña" style="margin-left: 6px;">
+            <i data-lucide="key"></i>
+          </button>
           <button id="logout-btn" class="logout-btn" title="Cerrar sesión">
             <i data-lucide="log-out"></i>
           </button>
@@ -526,6 +529,38 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cambiar Contraseña -->
+  <div id="password-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="key" style="color: var(--primary-color);"></i>
+          <h2 style="margin: 0; font-size: 18px;">Cambiar Mi Contraseña</h2>
+        </div>
+        <button id="close-password-modal-btn" class="modal-close-btn" title="Cerrar ventana">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 10px 0;">
+        <form id="change-password-form" class="admin-form">
+          <div class="form-group">
+            <label for="pwd_actual">Contraseña Actual</label>
+            <input type="password" id="pwd_actual" required autocomplete="off">
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <label for="pwd_nueva">Nueva Contraseña</label>
+            <input type="password" id="pwd_nueva" placeholder="Mínimo 4 caracteres" required autocomplete="off">
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <label for="pwd_confirmar">Confirmar Nueva Contraseña</label>
+            <input type="password" id="pwd_confirmar" placeholder="Repita la nueva contraseña" required autocomplete="off">
+          </div>
+          <button type="submit" class="admin-submit-btn-full" id="pwd-submit-btn" style="margin-top: 18px;">Actualizar Contraseña</button>
+        </form>
       </div>
     </div>
   </div>

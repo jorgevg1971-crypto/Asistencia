@@ -964,6 +964,42 @@ function registrarEventListeners() {
   // Docentes Modos
   docentesSingleModeBtn.addEventListener('click', () => setDocenteInputMode('single'));
   docentesBulkModeBtn.addEventListener('click', () => setDocenteInputMode('bulk'));
+
+  // Filtrado en caliente de docentes similares mientras se escribe
+  newDocenteNombre.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    if (!query) {
+      renderAdminDocentesList(maestrosData.docentes);
+      return;
+    }
+
+    const queryNormalizado = normalizeText(query);
+    const queryFonetico = obtenerCodigoFonetico(query);
+
+    const docentesFiltrados = maestrosData.docentes.filter(d => {
+      // Excluir al docente en edición de las sugerencias
+      if (docenteEditId !== null && d.id === docenteEditId) return false;
+
+      const dNormalizado = normalizeText(d.nombre);
+      const dFonetico = obtenerCodigoFonetico(d.nombre);
+
+      // Coincidencia parcial
+      if (dNormalizado.includes(queryNormalizado)) return true;
+
+      // Coincidencia fonética (si la consulta tiene al menos 3 letras)
+      if (queryNormalizado.length >= 3 && dFonetico.includes(queryFonetico)) return true;
+
+      // Coincidencia Levenshtein (distancia corta)
+      if (queryNormalizado.length >= 4) {
+        const distancia = calcularDistanciaLevenshtein(queryNormalizado, dNormalizado);
+        if (distancia <= 2) return true;
+      }
+
+      return false;
+    });
+
+    renderAdminDocentesList(docentesFiltrados, query);
+  });
   
   // Materias Modos
   materiasSingleModeBtn.addEventListener('click', () => setMateriaInputMode('single'));
@@ -1273,6 +1309,7 @@ function cancelarDocenteEdit() {
   docenteEditId = null;
   docenteSubmitBtn.textContent = 'Agregar';
   cancelDocenteEditBtn.style.display = 'none';
+  renderAdminDocentesList(maestrosData.docentes);
 }
 
 // Cargar Materia para Editar
@@ -1341,14 +1378,21 @@ async function eliminarGestion(id) {
   }
 }
 
-// Pintar las listas de docentes, materias y gestiones del modal de administración
-function renderAdminLists() {
-  // 1. Lista de Docentes
+// Pintar de forma dinámica y filtrable la lista de docentes registrados en el modal maestro
+function renderAdminDocentesList(docentesArray, queryText = '') {
   adminDocentesList.innerHTML = '';
-  if (maestrosData.docentes.length === 0) {
-    adminDocentesList.innerHTML = `<li class="admin-item" style="color:var(--text-muted); font-style:italic;">No hay docentes registrados.</li>`;
+  if (docentesArray.length === 0) {
+    if (queryText) {
+      adminDocentesList.innerHTML = `
+        <li class="admin-item" style="color:#10b981; background: rgba(16, 185, 129, 0.1); border: 1px dashed rgba(16, 185, 129, 0.25); font-style:italic; font-weight: 500; justify-content: center; padding: 10px; border-radius: var(--border-radius-md);">
+          <i data-lucide="check-circle" style="width: 14px; height: 14px; margin-right: 6px;"></i> ¡Nombre disponible para registro!
+        </li>
+      `;
+    } else {
+      adminDocentesList.innerHTML = `<li class="admin-item" style="color:var(--text-muted); font-style:italic;">No hay docentes registrados.</li>`;
+    }
   } else {
-    maestrosData.docentes.forEach(d => {
+    docentesArray.forEach(d => {
       const li = document.createElement('li');
       li.className = 'admin-item';
       li.innerHTML = `
@@ -1365,6 +1409,13 @@ function renderAdminLists() {
       adminDocentesList.appendChild(li);
     });
   }
+  lucide.createIcons();
+}
+
+// Pintar las listas de docentes, materias y gestiones del modal de administración
+function renderAdminLists() {
+  // 1. Lista de Docentes
+  renderAdminDocentesList(maestrosData.docentes);
 
   // 2. Lista de Materias
   adminMateriasList.innerHTML = '';

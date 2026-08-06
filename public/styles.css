@@ -43,6 +43,9 @@
   --modal-border: rgba(255, 255, 255, 0.1);
   --select-option-bg: #0f172a;
   --select-option-color: #f8fafc;
+  --suggestion-hover-bg: rgba(59, 130, 246, 0.25);
+  --suggestion-hover-color: #ffffff;
+  --suggestion-hover-subtitle: #a5b4fc;
 }
 
 /* --- RE-DEFINICIÓN DE VARIABLES PARA TEMA CLARO --- */
@@ -72,6 +75,9 @@ body.light-theme {
   --modal-border: rgba(15, 23, 42, 0.1);
   --select-option-bg: #ffffff;
   --select-option-color: #0f172a;
+  --suggestion-hover-bg: rgba(59, 130, 246, 0.1);
+  --suggestion-hover-color: #2563eb;
+  --suggestion-hover-subtitle: #4f46e5;
 }
 
 /* Comportamiento dinámico de Inputs en Modo Claro al enfocar */
@@ -348,10 +354,10 @@ textarea:focus {
   top: calc(100% + 4px);
   left: 0;
   width: 100%;
-  background: #1e293b;
+  background: var(--modal-bg);
   border: 1px solid var(--panel-border);
   border-radius: var(--border-radius-md);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   max-height: 220px;
   overflow-y: auto;
   z-index: 100;
@@ -391,8 +397,8 @@ textarea:focus {
 
 .suggestion-item:hover,
 .suggestion-item.highlighted {
-  background: rgba(59, 130, 246, 0.2);
-  color: white;
+  background: var(--suggestion-hover-bg);
+  color: var(--suggestion-hover-color);
 }
 
 .suggestion-subtitle {
@@ -402,7 +408,7 @@ textarea:focus {
 
 .suggestion-item:hover .suggestion-subtitle,
 .suggestion-item.highlighted .suggestion-subtitle {
-  color: #a5b4fc;
+  color: var(--suggestion-hover-subtitle);
 }
 
 .readonly-input {

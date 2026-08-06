@@ -125,6 +125,7 @@ const materiaBulkGroup = document.getElementById('materia-bulk-group');
 const bulkMateriasLista = document.getElementById('bulk_materias_lista');
 const newMateriaPrograma = document.getElementById('new_materia_programa');
 const newMateriaIdioma = document.getElementById('new_materia_idioma');
+const newMateriaDocente = document.getElementById('new_materia_docente');
 const materiaSubmitBtn = document.getElementById('materia-submit-btn');
 const cancelMateriaEditBtn = document.getElementById('cancel-materia-edit-btn');
 const adminMateriasList = document.getElementById('admin-materias-list');
@@ -191,8 +192,25 @@ async function cargarDatosMaestros() {
     
     // Rellenar select de Gestión Académica en el formulario principal
     rellenarSelectGestiones();
+    // Rellenar select de docentes en administración de materias
+    rellenarSelectDocentesMaterias();
   } catch (error) {
     showToast(error.message, 'error');
+  }
+}
+
+// Rellenar select de docentes en administración de materias
+function rellenarSelectDocentesMaterias() {
+  if (!newMateriaDocente) return;
+  newMateriaDocente.innerHTML = '<option value="">Seleccione un docente...</option>';
+  
+  if (maestrosData.docentes && maestrosData.docentes.length > 0) {
+    maestrosData.docentes.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.nombre;
+      newMateriaDocente.appendChild(opt);
+    });
   }
 }
 
@@ -228,7 +246,16 @@ function setupAutocompletes() {
     hiddenElement: docenteIdInput,
     clearBtn: clearDocenteBtn,
     suggestionsContainer: docenteSuggestions,
-    getDataList: () => maestrosData.docentes,
+    getDataList: () => {
+      const selectedMateriaId = materiaIdInput.value ? parseInt(materiaIdInput.value) : null;
+      if (selectedMateriaId) {
+        const mat = maestrosData.materias.find(m => m.id === selectedMateriaId);
+        if (mat && mat.docente_id) {
+          return maestrosData.docentes.filter(d => d.id === mat.docente_id);
+        }
+      }
+      return maestrosData.docentes;
+    },
     searchField: 'nombre',
     getDisplayValue: (item) => item.nombre,
     getSubtitleValue: null,
@@ -242,7 +269,13 @@ function setupAutocompletes() {
     hiddenElement: materiaIdInput,
     clearBtn: clearMateriaBtn,
     suggestionsContainer: materiaSuggestions,
-    getDataList: () => maestrosData.materias,
+    getDataList: () => {
+      const selectedDocenteId = docenteIdInput.value ? parseInt(docenteIdInput.value) : null;
+      if (selectedDocenteId) {
+        return maestrosData.materias.filter(m => m.docente_id === selectedDocenteId);
+      }
+      return maestrosData.materias;
+    },
     searchField: 'nombre',
     getDisplayValue: (item) => item.nombre,
     getSubtitleValue: (item) => `Programa: ${item.programa} | Idioma predeterminado: ${item.idioma_predeterminado}`,
@@ -250,6 +283,15 @@ function setupAutocompletes() {
       programaInput.value = item.programa;
       if (item.idioma_predeterminado) {
         idiomaDictadoSelect.value = item.idioma_predeterminado;
+      }
+      // Si la materia tiene un docente asignado y no hay docente seleccionado, autoseleccionarlo
+      if (item.docente_id && !docenteIdInput.value) {
+        const doc = maestrosData.docentes.find(d => d.id === item.docente_id);
+        if (doc) {
+          docenteIdInput.value = doc.id;
+          docenteBuscarInput.value = doc.nombre;
+          clearDocenteBtn.style.display = 'flex';
+        }
       }
     },
     onClearCallback: () => {
@@ -774,7 +816,12 @@ function registrarEventListeners() {
     } else {
       // --- MODO INDIVIDUAL ---
       const nombre = newMateriaNombre.value.trim();
+      const docente_id = newMateriaDocente.value ? parseInt(newMateriaDocente.value) : null;
       if (!nombre) return;
+      if (!docente_id) {
+        showToast('Debe seleccionar un docente para la materia.', 'error');
+        return;
+      }
 
       try {
         let res, data;
@@ -782,7 +829,7 @@ function registrarEventListeners() {
           res = await fetch(`/api/materias/${materiaEditId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre, programa, idioma_predeterminado })
+            body: JSON.stringify({ nombre, programa, idioma_predeterminado, docente_id })
           });
           data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Error al actualizar materia');
@@ -791,7 +838,7 @@ function registrarEventListeners() {
           res = await fetch('/api/materias', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre, programa, idioma_predeterminado })
+            body: JSON.stringify({ nombre, programa, idioma_predeterminado, docente_id })
           });
           data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Error al guardar materia');
@@ -936,6 +983,7 @@ function editarMateria(id) {
   newMateriaNombre.value = materia.nombre;
   newMateriaPrograma.value = materia.programa;
   newMateriaIdioma.value = materia.idioma_predeterminado;
+  newMateriaDocente.value = materia.docente_id || '';
   materiaEditId = id;
   materiaSubmitBtn.textContent = 'Guardar Cambios';
   cancelMateriaEditBtn.style.display = 'block';
@@ -947,6 +995,7 @@ function cancelarMateriaEdit() {
   newMateriaNombre.value = '';
   newMateriaPrograma.value = 'LpD';
   newMateriaIdioma.value = 'Español';
+  newMateriaDocente.value = '';
   materiaEditId = null;
   materiaSubmitBtn.textContent = 'Agregar Materia';
   cancelMateriaEditBtn.style.display = 'none';
@@ -1028,7 +1077,7 @@ function renderAdminLists() {
       li.innerHTML = `
         <div class="admin-item-text">
           <span>${m.nombre}</span>
-          <span class="admin-item-subtitle">Programa: ${m.programa} | Idioma: ${m.idioma_predeterminado}</span>
+          <span class="admin-item-subtitle">Programa: ${m.programa} | Idioma: ${m.idioma_predeterminado}${m.docente_nombre ? ' | Docente: ' + m.docente_nombre : ''}</span>
         </div>
         <div style="display: flex; gap: 8px;">
           <button class="delete-btn" onclick="editarMateria(${m.id})" title="Editar materia" style="color: var(--primary-color); background: rgba(59, 130, 246, 0.1);">

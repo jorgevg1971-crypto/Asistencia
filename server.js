@@ -38,6 +38,17 @@ const db = new sqlite3.Database(dbPath, (err) => {
         activa INTEGER DEFAULT 0
       )`);
 
+      // Crear tabla asociativa de materia_docente_gestion
+      db.run(`CREATE TABLE IF NOT EXISTS materia_docente_gestion (
+        materia_id INTEGER NOT NULL,
+        docente_id INTEGER NOT NULL,
+        gestion_id INTEGER NOT NULL,
+        PRIMARY KEY (materia_id, docente_id, gestion_id),
+        FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE,
+        FOREIGN KEY (docente_id) REFERENCES docentes(id) ON DELETE CASCADE,
+        FOREIGN KEY (gestion_id) REFERENCES gestiones(id) ON DELETE CASCADE
+      )`);
+
       // Crear tabla de asistencias
       db.run(`CREATE TABLE IF NOT EXISTS asistencias (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,7 +116,25 @@ const dbRun = (sql, params = []) => {
 app.get('/api/maestros', async (req, res) => {
   try {
     const docentes = await dbQueryAll("SELECT * FROM docentes ORDER BY nombre ASC");
-    const materias = await dbQueryAll("SELECT * FROM materias ORDER BY nombre ASC");
+    
+    // Obtener gestión activa
+    const gestionActiva = await dbGet("SELECT id FROM gestiones WHERE activa = 1 LIMIT 1");
+    const gestionActivaId = gestionActiva ? gestionActiva.id : null;
+    
+    let materias = [];
+    if (gestionActivaId) {
+      // Hacer LEFT JOIN para traer el docente asociado en la gestión activa
+      materias = await dbQueryAll(`
+        SELECT m.*, mdg.docente_id, d.nombre AS docente_nombre
+        FROM materias m
+        LEFT JOIN materia_docente_gestion mdg ON m.id = mdg.materia_id AND mdg.gestion_id = ?
+        LEFT JOIN docentes d ON mdg.docente_id = d.id
+        ORDER BY m.nombre ASC
+      `, [gestionActivaId]);
+    } else {
+      materias = await dbQueryAll("SELECT * FROM materias ORDER BY nombre ASC");
+    }
+
     const gestiones = await dbQueryAll("SELECT * FROM gestiones ORDER BY id DESC");
     res.json({ docentes, materias, gestiones });
   } catch (error) {
@@ -227,7 +256,7 @@ app.delete('/api/docentes/:id', async (req, res) => {
 
 // 7. Agregar una materia
 app.post('/api/materias', async (req, res) => {
-  const { nombre, programa, idioma_predeterminado } = req.body;
+  const { nombre, programa, idioma_predeterminado, docente_id } = req.body;
   if (!nombre || !programa || !idioma_predeterminado) {
     return res.status(400).json({ error: 'El nombre, programa e idioma son obligatorios.' });
   }
@@ -236,7 +265,20 @@ app.post('/api/materias', async (req, res) => {
       "INSERT INTO materias (nombre, programa, idioma_predeterminado) VALUES (?, ?, ?)",
       [nombre, programa, idioma_predeterminado]
     );
-    res.status(201).json({ id: result.lastID, nombre, programa, idioma_predeterminado });
+    const materiaId = result.lastID;
+
+    // Obtener gestión activa
+    const gestionActiva = await dbGet("SELECT id FROM gestiones WHERE activa = 1 LIMIT 1");
+    const gestionActivaId = gestionActiva ? gestionActiva.id : null;
+
+    if (docente_id && gestionActivaId) {
+      await dbRun(
+        "INSERT OR IGNORE INTO materia_docente_gestion (materia_id, docente_id, gestion_id) VALUES (?, ?, ?)",
+        [materiaId, parseInt(docente_id), gestionActivaId]
+      );
+    }
+
+    res.status(201).json({ id: materiaId, nombre, programa, idioma_predeterminado, docente_id });
   } catch (error) {
     res.status(500).json({ error: 'Error al agregar materia: ' + error.message });
   }
@@ -298,7 +340,7 @@ app.post('/api/docentes/bulk', async (req, res) => {
 // 10. Editar una materia
 app.put('/api/materias/:id', async (req, res) => {
   const { id } = req.params;
-  const { nombre, programa, idioma_predeterminado } = req.body;
+  const { nombre, programa, idioma_predeterminado, docente_id } = req.body;
   if (!nombre || !programa || !idioma_predeterminado) {
     return res.status(400).json({ error: 'El nombre, programa e idioma predeterminado son obligatorios.' });
   }
@@ -307,6 +349,25 @@ app.put('/api/materias/:id', async (req, res) => {
       "UPDATE materias SET nombre = ?, programa = ?, idioma_predeterminado = ? WHERE id = ?",
       [nombre, programa, idioma_predeterminado, id]
     );
+
+    // Obtener gestión activa
+    const gestionActiva = await dbGet("SELECT id FROM gestiones WHERE activa = 1 LIMIT 1");
+    const gestionActivaId = gestionActiva ? gestionActiva.id : null;
+
+    if (gestionActivaId) {
+      // Eliminar relación previa en esta gestión y crear la nueva
+      await dbRun(
+        "DELETE FROM materia_docente_gestion WHERE materia_id = ? AND gestion_id = ?",
+        [id, gestionActivaId]
+      );
+      if (docente_id) {
+        await dbRun(
+          "INSERT OR IGNORE INTO materia_docente_gestion (materia_id, docente_id, gestion_id) VALUES (?, ?, ?)",
+          [id, parseInt(docente_id), gestionActivaId]
+        );
+      }
+    }
+
     res.json({ mensaje: 'Materia actualizada con éxito' });
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar materia: ' + error.message });
@@ -320,24 +381,33 @@ app.post('/api/materias/bulk', async (req, res) => {
     return res.status(400).json({ error: 'La lista de materias es obligatoria y debe ser un array.' });
   }
   try {
-    db.serialize(() => {
-      db.run("BEGIN TRANSACTION");
-      const stmt = db.prepare("INSERT INTO materias (nombre, programa, idioma_predeterminado) VALUES (?, ?, ?)");
-      materias.forEach(m => {
-        if (m.nombre && m.nombre.trim()) {
-          stmt.run(m.nombre.trim(), m.programa, m.idioma_predeterminado);
+    // Obtener gestión activa e ID de Profesor ePC
+    const epcTeacher = await dbGet("SELECT id FROM docentes WHERE nombre = 'Profesor ePC' LIMIT 1");
+    const epcTeacherId = epcTeacher ? epcTeacher.id : null;
+    
+    const gestionActiva = await dbGet("SELECT id FROM gestiones WHERE activa = 1 LIMIT 1");
+    const gestionActivaId = gestionActiva ? gestionActiva.id : null;
+
+    await dbRun("BEGIN TRANSACTION");
+    for (const m of materias) {
+      if (m.nombre && m.nombre.trim()) {
+        const result = await dbRun(
+          "INSERT INTO materias (nombre, programa, idioma_predeterminado) VALUES (?, ?, ?)",
+          [m.nombre.trim(), m.programa, m.idioma_predeterminado]
+        );
+        
+        if (epcTeacherId && gestionActivaId) {
+          await dbRun(
+            "INSERT OR IGNORE INTO materia_docente_gestion (materia_id, docente_id, gestion_id) VALUES (?, ?, ?)",
+            [result.lastID, epcTeacherId, gestionActivaId]
+          );
         }
-      });
-      stmt.finalize();
-      db.run("COMMIT", (err) => {
-        if (err) {
-          db.run("ROLLBACK");
-          return res.status(500).json({ error: 'Error al confirmar carga masiva: ' + err.message });
-        }
-        res.status(201).json({ mensaje: `${materias.length} materias agregadas con éxito.` });
-      });
-    });
+      }
+    }
+    await dbRun("COMMIT");
+    res.status(201).json({ mensaje: `${materias.length} materias agregadas y asociadas con éxito.` });
   } catch (error) {
+    try { await dbRun("ROLLBACK"); } catch (e) {}
     res.status(500).json({ error: 'Error en la carga masiva de materias: ' + error.message });
   }
 });

@@ -41,6 +41,8 @@
   --badge-bg: rgba(255, 255, 255, 0.05);
   --modal-bg: #1e293b;
   --modal-border: rgba(255, 255, 255, 0.1);
+  --select-option-bg: #0f172a;
+  --select-option-color: #f8fafc;
 }
 
 /* --- RE-DEFINICIÓN DE VARIABLES PARA TEMA CLARO --- */
@@ -67,6 +69,8 @@ body.light-theme {
   --badge-bg: rgba(15, 23, 42, 0.05);
   --modal-bg: #ffffff;
   --modal-border: rgba(15, 23, 42, 0.1);
+  --select-option-bg: #ffffff;
+  --select-option-color: #0f172a;
 }
 
 /* Comportamiento dinámico de Inputs en Modo Claro al enfocar */
@@ -408,8 +412,8 @@ textarea:focus {
 }
 
 select option {
-  background-color: #0f172a;
-  color: var(--text-primary);
+  background-color: var(--select-option-bg);
+  color: var(--select-option-color);
 }
 
 textarea {

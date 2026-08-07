@@ -2677,14 +2677,7 @@ function renderizarGraficosDashboard(data) {
       maintainAspectRatio: false,
       cutout: '70%',
       plugins: {
-        legend: {
-          display: true,
-          position: 'bottom',
-          labels: {
-            color: textColor,
-            font: { family: 'Inter', size: 10 }
-          }
-        }
+        legend: { display: false }
       }
     }
   });

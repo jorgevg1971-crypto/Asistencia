@@ -507,10 +507,21 @@
         </div>
         <div class="db-chart-card">
           <h3><i data-lucide="languages" class="indigo-c"></i> Resumen Idioma Dictado</h3>
-          <div class="donut-chart-wrapper">
+          <div class="donut-chart-wrapper" style="display: flex; flex-direction: column; align-items: center;">
             <div class="donut-chart-box">
               <canvas id="chart-idioma"></canvas>
               <div class="donut-center-value" id="db-val-idioma-ing">0</div>
+            </div>
+            <!-- Leyenda HTML para evitar desalineación vertical del donut -->
+            <div class="donut-html-legend" style="display: flex; gap: 12px; margin-top: 8px; justify-content: center; font-size: 11px; font-family: 'Inter', sans-serif; color: var(--text-primary);">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #6366f1;"></span>
+                <span>En inglés</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #f43f5e;"></span>
+                <span>En Español (Desvío)</span>
+              </div>
             </div>
           </div>
         </div>

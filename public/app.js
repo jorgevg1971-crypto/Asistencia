@@ -2618,8 +2618,8 @@ function renderizarGraficosDashboard(data) {
   });
 
   // --- GRÁFICO 6: RESUMEN IDIOMA INGLÉS (DONUT) ---
-  const materiasIngles = maestrosData.materias.filter(m => m.idioma_predeterminado === 'Inglés').map(m => m.id);
-  const inglesSi = data.filter(a => a.dicto_clases === 'SI' && a.idioma_dictado === 'Inglés').length;
+  const materiasIngles = maestrosData.materias.filter(m => m.idioma_predeterminado === 'Inglés' && !m.nombre.trim().startsWith('Inglés') && !m.nombre.trim().startsWith('Ingles')).map(m => m.id);
+  const inglesSi = data.filter(a => a.dicto_clases === 'SI' && a.idioma_dictado === 'Inglés' && materiasIngles.includes(a.materia_id)).length;
   const inglesNo = data.filter(a => a.dicto_clases === 'SI' && a.idioma_dictado === 'Español' && materiasIngles.includes(a.materia_id)).length;
 
   dbValIdiomaIng.textContent = inglesSi;
@@ -2647,7 +2647,7 @@ function renderizarGraficosDashboard(data) {
   });
 
   // --- GRÁFICO 7: CUMPLIMIENTO IDIOMA POR ASIGNATURA ---
-  const materiasPlanIngles = maestrosData.materias.filter(m => m.idioma_predeterminado === 'Inglés');
+  const materiasPlanIngles = maestrosData.materias.filter(m => m.idioma_predeterminado === 'Inglés' && !m.nombre.trim().startsWith('Inglés') && !m.nombre.trim().startsWith('Ingles'));
   const etiquetasMaterias = [];
   const dictadoInglesList = [];
   const dictadoEspanolList = [];
@@ -2845,7 +2845,7 @@ function renderizarTablasIncidencias(data) {
   // 5. INCUMPLIMIENTO DE IDIOMA
   const tbodyIdioma = document.getElementById('db-table-idioma-tbody');
   tbodyIdioma.innerHTML = '';
-  const materiasInglesIds = maestrosData.materias.filter(m => m.idioma_predeterminado === 'Inglés').map(m => m.id);
+  const materiasInglesIds = maestrosData.materias.filter(m => m.idioma_predeterminado === 'Inglés' && !m.nombre.trim().startsWith('Inglés') && !m.nombre.trim().startsWith('Ingles')).map(m => m.id);
   const desviosIdioma = data.filter(a => a.dicto_clases === 'SI' && a.idioma_dictado === 'Español' && materiasInglesIds.includes(a.materia_id))
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 

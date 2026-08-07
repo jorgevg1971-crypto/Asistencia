@@ -304,6 +304,14 @@ function renderizarGraficosDashboard(data) {
   const chartOptionsDefault = {
     responsive: true,
     maintainAspectRatio: false,
+    onClick: (event, activeElements, chart) => {
+      if (activeElements && activeElements.length > 0) {
+        const activeElement = activeElements[0];
+        const index = activeElement.index;
+        const label = chart.data.labels[index];
+        handleChartElementClick(chart.canvas.id, label);
+      }
+    },
     plugins: {
       legend: { labels: { color: textColor } }
     },
@@ -468,6 +476,14 @@ function renderizarGraficosDashboard(data) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      onClick: (event, activeElements, chart) => {
+        if (activeElements && activeElements.length > 0) {
+          const activeElement = activeElements[0];
+          const index = activeElement.index;
+          const label = chart.data.labels[index];
+          handleChartElementClick(chart.canvas.id, label);
+        }
+      },
       plugins: { legend: { position: 'bottom', labels: { color: textColor } } }
     }
   });
@@ -548,6 +564,14 @@ function renderizarGraficosDashboard(data) {
       responsive: true,
       maintainAspectRatio: false,
       cutout: '70%',
+      onClick: (event, activeElements, chart) => {
+        if (activeElements && activeElements.length > 0) {
+          const activeElement = activeElements[0];
+          const index = activeElement.index;
+          const label = chart.data.labels[index];
+          handleChartElementClick(chart.canvas.id, label);
+        }
+      },
       plugins: {
         legend: { display: false }
       }
@@ -813,4 +837,62 @@ function showToast(message, type = 'info') {
   setTimeout(() => {
     toast.style.display = 'none';
   }, 3000);
+}
+
+// Procesar clics en elementos de gráficos (filtrado dinámico interactivo)
+function handleChartElementClick(canvasId, label) {
+  if (!label) return;
+
+  if (canvasId === 'chart-salidas-antes' || canvasId === 'chart-retrasos') {
+    const docente = maestrosData.docentes.find(d => d.nombre.trim() === label.trim());
+    if (docente) {
+      dbFilterProfesor.value = docente.id;
+      actualizarDashboard();
+      showToast(`Filtrado por Profesor: ${docente.nombre}`, 'success');
+    }
+  } else if (canvasId === 'chart-perdidas-repuestas' || canvasId === 'chart-materias-incidencias' || canvasId === 'chart-cumplimiento-idioma') {
+    const materia = maestrosData.materias.find(m => m.nombre.trim() === label.trim());
+    if (materia) {
+      dbFilterMateria.value = materia.id;
+      actualizarDashboard();
+      showToast(`Filtrado por Materia: ${materia.nombre}`, 'success');
+    }
+  } else if (canvasId === 'chart-modalidad') {
+    if (label === 'Virtual') {
+      dbMetricFilter = 'virtuales';
+      document.querySelectorAll('.db-metric-card').forEach(c => {
+        if (c.id === 'db-card-virtuales') c.classList.add('active');
+        else c.classList.remove('active');
+      });
+      actualizarDashboard();
+      showToast('Filtrado por: Clases Virtuales', 'success');
+    } else if (label === 'Presencial') {
+      dbMetricFilter = null;
+      document.querySelectorAll('.db-metric-card').forEach(c => {
+        c.classList.remove('active');
+      });
+      actualizarDashboard();
+      showToast('Filtro de modalidad presencial', 'info');
+    }
+  } else if (canvasId === 'chart-idioma') {
+    if (label === 'En Español (Desvío)') {
+      showToast('Mostrando desvíos de idioma en tablas inferiores', 'info');
+    }
+  } else if (canvasId === 'chart-tendencia') {
+    const partes = label.split('/');
+    if (partes.length === 2) {
+      const dia = partes[0];
+      const mes = partes[1];
+      const coincidencia = asistenciasData.find(a => {
+        const aPartes = a.fecha.split('-');
+        return aPartes[2] === dia && aPartes[1] === mes;
+      });
+      if (coincidencia) {
+        dbFilterDesde.value = coincidencia.fecha;
+        dbFilterHasta.value = coincidencia.fecha;
+        actualizarDashboard();
+        showToast(`Filtrado por Fecha: ${dia}/${mes}`, 'success');
+      }
+    }
+  }
 }

@@ -28,6 +28,15 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- Pestañas de Navegación de la App -->
+        <div class="nav-tabs-container" id="app-nav-tabs" style="display: none;">
+          <button id="nav-registro-btn" class="nav-tab-btn active" title="Ir al registro e historial de clases">
+            <i data-lucide="edit-3"></i> Registro
+          </button>
+          <button id="nav-dashboard-btn" class="nav-tab-btn" title="Ir al Dashboard Analítico">
+            <i data-lucide="bar-chart-2"></i> Dashboard
+          </button>
+        </div>
         <!-- Indicador de Usuario Logueado -->
         <div class="user-badge" id="user-badge" style="display: none;">
           <i data-lucide="user"></i>
@@ -46,16 +55,21 @@
         <button id="theme-toggle-btn" class="theme-toggle-btn" title="Cambiar tema claro/oscuro">
           <i data-lucide="sun" id="theme-toggle-icon"></i>
         </button>
+        <button id="dashboard-pdf-btn" class="admin-btn pdf-btn" style="display: none; background: #10b981; color: white;" title="Exportar Dashboard a PDF">
+          <i data-lucide="file-text"></i> Exportar PDF
+        </button>
         <button id="open-admin-btn" class="admin-btn" title="Gestionar docentes y materias">
           <i data-lucide="settings"></i> Gestionar Datos
         </button>
       </div>
     </header>
 
-    <!-- Main Grid -->
-    <main class="app-main">
-      <!-- Sección Formulario -->
-      <section class="card-section form-card">
+    <!-- Sección de Registro & Historial -->
+    <div id="section-registro" class="app-section">
+      <!-- Main Grid -->
+      <main class="app-main">
+        <!-- Sección Formulario -->
+        <section class="card-section form-card">
         <div class="card-header">
           <i data-lucide="edit-3"></i>
           <h2>Registrar Asistencia</h2>
@@ -353,7 +367,301 @@
           </table>
         </div>
       </section>
-    </main>
+      </main>
+    </div>
+
+    <!-- Sección del Dashboard Analítico -->
+    <div id="section-dashboard" class="app-section" style="display: none;">
+      <!-- Barra de Filtros del Dashboard -->
+      <section class="dashboard-filters-card">
+        <div class="db-filters-grid">
+          <div class="form-group">
+            <label for="db_filter_desde"><i data-lucide="calendar"></i> Desde</label>
+            <input type="date" id="db_filter_desde">
+          </div>
+          <div class="form-group">
+            <label for="db_filter_hasta"><i data-lucide="calendar"></i> Hasta</label>
+            <input type="date" id="db_filter_hasta">
+          </div>
+          <div class="form-group">
+            <label for="db_filter_programa"><i data-lucide="graduation-cap"></i> Programa</label>
+            <select id="db_filter_programa">
+              <option value="TODOS">Todos</option>
+              <option value="LpD">LpD</option>
+              <option value="TUSGE">TUSGE</option>
+              <option value="MpD">MpD</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="db_filter_profesor"><i data-lucide="user"></i> Profesor</label>
+            <select id="db_filter_profesor">
+              <option value="TODOS">Todos los Profes</option>
+              <!-- Dinámico -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="db_filter_materia"><i data-lucide="book-open"></i> Materia</label>
+            <select id="db_filter_materia">
+              <option value="TODOS">Todas las Materias</option>
+              <!-- Dinámico -->
+            </select>
+          </div>
+          <div class="form-group search-filter-group">
+            <label for="db_filter_search"><i data-lucide="search"></i> Buscador Global</label>
+            <div class="input-inline-group">
+              <input type="text" id="db_filter_search" placeholder="Buscar texto..." autocomplete="off">
+              <button id="db-reset-filters-btn" class="reset-filters-btn" title="Restaurar todos los filtros">
+                <i data-lucide="rotate-ccw"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Rejilla de Tarjetas Métricas -->
+      <div class="db-metrics-grid">
+        <div class="db-metric-card" id="db-card-total">
+          <div class="db-metric-header">
+            <span class="db-metric-tag blue">Total</span>
+            <i data-lucide="files" class="blue-icon"></i>
+          </div>
+          <h2 class="db-metric-value" id="db-val-total">0</h2>
+          <p class="db-metric-subtitle">Registros</p>
+        </div>
+        <div class="db-metric-card" id="db-card-atrasos">
+          <div class="db-metric-header">
+            <span class="db-metric-tag orange">Atrasos</span>
+            <i data-lucide="clock" class="orange-icon"></i>
+          </div>
+          <h2 class="db-metric-value" id="db-val-atrasos">0</h2>
+          <p class="db-metric-subtitle">Llegaron tarde</p>
+        </div>
+        <div class="db-metric-card" id="db-card-salidas">
+          <div class="db-metric-header">
+            <span class="db-metric-tag purple">Salidas Antes</span>
+            <i data-lucide="log-out" class="purple-icon"></i>
+          </div>
+          <h2 class="db-metric-value" id="db-val-salidas">0</h2>
+          <p class="db-metric-subtitle">Se retiraron antes</p>
+        </div>
+        <div class="db-metric-card" id="db-card-perdidas">
+          <div class="db-metric-header">
+            <span class="db-metric-tag red">Perdidas</span>
+            <i data-lucide="calendar-off" class="red-icon"></i>
+          </div>
+          <h2 class="db-metric-value" id="db-val-perdidas">0</h2>
+          <p class="db-metric-subtitle">Clases no dictadas</p>
+        </div>
+        <div class="db-metric-card" id="db-card-repuestas">
+          <div class="db-metric-header">
+            <span class="db-metric-tag lightblue">Repuestas</span>
+            <i data-lucide="refresh-cw" class="lightblue-icon"></i>
+          </div>
+          <h2 class="db-metric-value" id="db-val-repuestas">0</h2>
+          <p class="db-metric-subtitle">Clases repuestas</p>
+        </div>
+        <div class="db-metric-card" id="db-card-virtuales">
+          <div class="db-metric-header">
+            <span class="db-metric-tag green">Virtuales</span>
+            <i data-lucide="laptop" class="green-icon"></i>
+          </div>
+          <h2 class="db-metric-value" id="db-val-virtuales">0</h2>
+          <p class="db-metric-subtitle">Clases virtuales</p>
+        </div>
+      </div>
+
+      <!-- Rejilla de Gráficos (Fila 1 & 2) -->
+      <div class="db-charts-row-3">
+        <div class="db-chart-card">
+          <h3><i data-lucide="arrow-left-right" class="morado-c"></i> Top 5 Salidas Antes (Minutos)</h3>
+          <div class="chart-canvas-container">
+            <canvas id="chart-salidas-antes"></canvas>
+          </div>
+        </div>
+        <div class="db-chart-card">
+          <h3><i data-lucide="bar-chart-3" class="rojo-c"></i> Clases Perdidas vs Repuestas</h3>
+          <div class="chart-canvas-container">
+            <canvas id="chart-perdidas-repuestas"></canvas>
+          </div>
+        </div>
+        <div class="db-chart-card">
+          <h3><i data-lucide="clock" class="naranja-c"></i> Top 5 Retrasos (Minutos)</h3>
+          <div class="chart-canvas-container">
+            <canvas id="chart-retrasos"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="db-charts-row-3" style="margin-top: 20px;">
+        <div class="db-chart-card">
+          <h3><i data-lucide="shapes" class="verde-c"></i> Modalidad de Clases</h3>
+          <div class="chart-canvas-container donut">
+            <canvas id="chart-modalidad"></canvas>
+          </div>
+        </div>
+        <div class="db-chart-card">
+          <h3><i data-lucide="alert-circle" class="rosa-c"></i> Top 5 Materias con Incidencias</h3>
+          <div class="chart-canvas-container">
+            <canvas id="chart-materias-incidencias"></canvas>
+          </div>
+        </div>
+        <div class="db-chart-card">
+          <h3><i data-lucide="languages" class="indigo-c"></i> Resumen Idioma Dictado</h3>
+          <div class="donut-chart-wrapper">
+            <div class="donut-chart-box">
+              <canvas id="chart-idioma"></canvas>
+              <div class="donut-center-value" id="db-val-idioma-ing">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfico de Cumplimiento de Idioma por Asignatura (Fila 3) -->
+      <div class="db-charts-row-1" style="margin-top: 20px;">
+        <div class="db-chart-card">
+          <h3><i data-lucide="check-square" class="emerald-c"></i> Cumplimiento Idioma por Materia / ING (Materias del Plan de Inglés)</h3>
+          <div class="chart-canvas-container wide">
+            <canvas id="chart-cumplimiento-idioma"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfico de Tendencia de Clases (Fila 4) -->
+      <div class="db-charts-row-1" style="margin-top: 20px;">
+        <div class="db-chart-card">
+          <h3><i data-lucide="trending-up" class="blue-c"></i> Tendencia de Registros por Día</h3>
+          <div class="chart-canvas-container wide">
+            <canvas id="chart-tendencia"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tablas de Detalle de Incidencias -->
+      <div class="db-tables-grid" style="margin-top: 20px;">
+        <!-- Llegadas Tarde -->
+        <div class="db-table-card">
+          <h4><i data-lucide="clock" class="orange-c"></i> Llegadas Tarde</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Tiempo</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-tarde-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Salidas Antes -->
+        <div class="db-table-card">
+          <h4><i data-lucide="log-out" class="purple-c"></i> Salidas Antes de Hora</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Retiro</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-salida-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="db-tables-grid" style="margin-top: 20px;">
+        <!-- Clases No Dictadas -->
+        <div class="db-table-card">
+          <h4><i data-lucide="calendar-off" class="red-c"></i> Clases No Dictadas</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Observación</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-nodictada-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Clases Repuestas -->
+        <div class="db-table-card">
+          <h4><i data-lucide="refresh-cw" class="lightblue-c"></i> Registro de Clases Repuestas</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Observación</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-repuesta-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="db-tables-grid" style="margin-top: 20px; margin-bottom: 40px;">
+        <!-- Desvíos de Idioma -->
+        <div class="db-table-card">
+          <h4><i data-lucide="alert-triangle" class="coral-c"></i> Incumplimiento de Idioma (ING dictado en ES)</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-idioma-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Modalidad Virtual -->
+        <div class="db-table-card">
+          <h4><i data-lucide="laptop" class="green-c"></i> Modalidad Virtual</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-virtual-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
 
     <!-- Toast Notification -->
     <div id="toast-notification" class="toast" style="display: none;">
@@ -593,6 +901,7 @@
   </div>
 
   <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

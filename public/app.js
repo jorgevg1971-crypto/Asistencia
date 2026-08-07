@@ -166,6 +166,35 @@ const pwdSubmitBtn = document.getElementById('pwd-submit-btn');
 const toggleColumnsBtn = document.getElementById('toggle-columns-btn');
 const columnsDropdownMenu = document.getElementById('columns-dropdown-menu');
 
+// --- Pestañas y Secciones del Dashboard ---
+const appNavTabs = document.getElementById('app-nav-tabs');
+const navRegistroBtn = document.getElementById('nav-registro-btn');
+const navDashboardBtn = document.getElementById('nav-dashboard-btn');
+const sectionRegistro = document.getElementById('section-registro');
+const sectionDashboard = document.getElementById('section-dashboard');
+const dashboardPdfBtn = document.getElementById('dashboard-pdf-btn');
+
+// --- Filtros del Dashboard ---
+const dbFilterDesde = document.getElementById('db_filter_desde');
+const dbFilterHasta = document.getElementById('db_filter_hasta');
+const dbFilterPrograma = document.getElementById('db_filter_programa');
+const dbFilterProfesor = document.getElementById('db_filter_profesor');
+const dbFilterMateria = document.getElementById('db_filter_materia');
+const dbFilterSearch = document.getElementById('db_filter_search');
+const dbResetFiltersBtn = document.getElementById('db-reset-filters-btn');
+
+// --- Métricas del Dashboard ---
+const dbValTotal = document.getElementById('db-val-total');
+const dbValAtrasos = document.getElementById('db-val-atrasos');
+const dbValSalidas = document.getElementById('db-val-salidas');
+const dbValPerdidas = document.getElementById('db-val-perdidas');
+const dbValRepuestas = document.getElementById('db-val-repuestas');
+const dbValVirtuales = document.getElementById('db-val-virtuales');
+const dbValIdiomaIng = document.getElementById('db-val-idioma-ing');
+
+// Instancias de Chart.js activas
+let chartsInstances = {};
+
 // Inicialización de la Aplicación
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
@@ -180,11 +209,13 @@ function verificarSesion() {
     activeUser = JSON.parse(userJson);
     activeUserName.textContent = activeUser.username;
     userBadge.style.display = 'flex';
+    appNavTabs.style.display = 'flex';
     loginOverlay.style.display = 'none';
     return true;
   } else {
     activeUser = null;
     userBadge.style.display = 'none';
+    appNavTabs.style.display = 'none';
     loginOverlay.style.display = 'flex';
     return false;
   }
@@ -243,6 +274,9 @@ async function continuarInicializacion() {
 
   // Inicializar visibilidad de columnas
   inicializarSelectorColumnas();
+
+  // Rellenar filtros del Dashboard
+  rellenarSelectoresDashboard();
 }
 
 // Cargar docentes, materias y gestiones académicas del Backend
@@ -904,6 +938,11 @@ function registrarEventListeners() {
       themeToggleIcon.setAttribute('data-lucide', 'sun');
     }
     lucide.createIcons();
+
+    // Si el dashboard está activo, redibujar los gráficos con los nuevos colores de tema
+    if (sectionDashboard && sectionDashboard.style.display === 'block') {
+      actualizarDashboard();
+    }
   });
 
   // --- LÓGICA DEL MODAL DE ADMINISTRACIÓN ---
@@ -1220,6 +1259,65 @@ function registrarEventListeners() {
 
   // Cancelar Edición Gestión
   cancelGestionEditBtn.addEventListener('click', cancelarGestionEdit);
+
+  // --- Event Listeners de las Pestañas de Navegación de la App ---
+  if (navRegistroBtn && navDashboardBtn) {
+    navRegistroBtn.addEventListener('click', () => {
+      navRegistroBtn.classList.add('active');
+      navDashboardBtn.classList.remove('active');
+      sectionRegistro.style.display = 'block';
+      sectionDashboard.style.display = 'none';
+      dashboardPdfBtn.style.display = 'none';
+      openAdminBtn.style.display = 'flex';
+    });
+
+    navDashboardBtn.addEventListener('click', () => {
+      navDashboardBtn.classList.add('active');
+      navRegistroBtn.classList.remove('active');
+      sectionDashboard.style.display = 'block';
+      sectionRegistro.style.display = 'none';
+      openAdminBtn.style.display = 'none';
+      dashboardPdfBtn.style.display = 'flex';
+      
+      // Inicializar y renderizar los gráficos al entrar
+      actualizarDashboard();
+    });
+  }
+
+  // --- Event Listeners de los Filtros del Dashboard ---
+  const filtrosDb = [dbFilterDesde, dbFilterHasta, dbFilterPrograma, dbFilterProfesor, dbFilterMateria];
+  filtrosDb.forEach(el => {
+    if (el) {
+      el.addEventListener('change', () => {
+        actualizarDashboard();
+      });
+    }
+  });
+
+  if (dbFilterSearch) {
+    dbFilterSearch.addEventListener('input', () => {
+      actualizarDashboard();
+    });
+  }
+
+  if (dbResetFiltersBtn) {
+    dbResetFiltersBtn.addEventListener('click', () => {
+      dbFilterDesde.value = '';
+      dbFilterHasta.value = '';
+      dbFilterPrograma.value = 'TODOS';
+      dbFilterProfesor.value = 'TODOS';
+      dbFilterMateria.value = 'TODOS';
+      dbFilterSearch.value = '';
+      actualizarDashboard();
+      showToast('Filtros del dashboard reiniciados', 'info');
+    });
+  }
+
+  if (dashboardPdfBtn) {
+    dashboardPdfBtn.addEventListener('click', () => {
+      window.print();
+    });
+  }
 }
 
 // Alternar entre modo de entrada de Docente (individual / masivo)
@@ -2153,4 +2251,572 @@ function sincronizarVisibilidadColumnas() {
     const colClass = cb.getAttribute('data-col');
     alternarColumnaVisible(colClass, cb.checked);
   });
+}
+
+// --- LÓGICA DEL DASHBOARD ANALÍTICO INTERACTIVO ---
+
+// Rellenar dinámicamente los selectores de filtros del Dashboard
+function rellenarSelectoresDashboard() {
+  if (!dbFilterProfesor || !dbFilterMateria) return;
+
+  // 1. Rango de fechas por defecto (Mes actual)
+  const d = new Date();
+  const primerDiaMes = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  const hoyString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  
+  dbFilterDesde.value = primerDiaMes;
+  dbFilterHasta.value = hoyString;
+
+  // 2. Combo Profesores
+  dbFilterProfesor.innerHTML = '<option value="TODOS">Todos los Profes</option>';
+  const docentesOrdenados = [...maestrosData.docentes].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  docentesOrdenados.forEach(doc => {
+    const opt = document.createElement('option');
+    opt.value = doc.id;
+    opt.textContent = doc.nombre;
+    dbFilterProfesor.appendChild(opt);
+  });
+
+  // 3. Combo Materias
+  dbFilterMateria.innerHTML = '<option value="TODOS">Todas las Materias</option>';
+  const materiasOrdenadas = [...maestrosData.materias].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  materiasOrdenadas.forEach(mat => {
+    const opt = document.createElement('option');
+    opt.value = mat.id;
+    opt.textContent = mat.nombre;
+    dbFilterMateria.appendChild(opt);
+  });
+}
+
+// Función principal para filtrar datos y actualizar el Dashboard
+function actualizarDashboard() {
+  const desde = dbFilterDesde.value;
+  const hasta = dbFilterHasta.value;
+  const programa = dbFilterPrograma.value;
+  const profesorId = dbFilterProfesor.value;
+  const materiaId = dbFilterMateria.value;
+  const searchVal = normalizeText(dbFilterSearch.value.trim());
+
+  // Filtrar el historial de asistencias
+  const dataFiltrada = asistenciasData.filter(a => {
+    // Rango de fechas
+    if (desde && a.fecha < desde) return false;
+    if (hasta && a.fecha > hasta) return false;
+
+    // Programa
+    if (programa !== 'TODOS' && a.programa !== programa) return false;
+
+    // Profesor
+    if (profesorId !== 'TODOS' && String(a.docente_id) !== profesorId) return false;
+
+    // Materia
+    if (materiaId !== 'TODOS' && String(a.materia_id) !== materiaId) return false;
+
+    // Búsqueda global
+    if (searchVal) {
+      const matchText = `${a.docente_nombre} ${a.materia_nombre} ${a.programa} ${a.comentarios || ''}`;
+      if (!normalizeText(matchText).includes(searchVal)) return false;
+    }
+
+    return true;
+  });
+
+  // 1. Calcular y rellenar métricas superiores
+  const total = dataFiltrada.length;
+  const atrasos = dataFiltrada.filter(a => a.dicto_clases === 'SI' && a.inicio === 'Con Retraso').length;
+  const salidas = dataFiltrada.filter(a => a.dicto_clases === 'SI' && a.final_clase === 'Se fue antes').length;
+  const perdidas = dataFiltrada.filter(a => a.dicto_clases === 'NO').length;
+  const repuestas = dataFiltrada.filter(a => a.reposicion === 'SI').length;
+  const virtuales = dataFiltrada.filter(a => a.dicto_clases === 'SI' && a.modalidad === 'VIRTUAL').length;
+
+  dbValTotal.textContent = total;
+  dbValAtrasos.textContent = atrasos;
+  dbValSalidas.textContent = salidas;
+  dbValPerdidas.textContent = perdidas;
+  dbValRepuestas.textContent = repuestas;
+  dbValVirtuales.textContent = virtuales;
+
+  // 2. Renderizar gráficos
+  renderizarGraficosDashboard(dataFiltrada);
+
+  // 3. Renderizar listados de incidencias compactos
+  renderizarTablasIncidencias(dataFiltrada);
+}
+
+// Renderizar gráficos de Chart.js con diseño premium claro/oscuro
+function renderizarGraficosDashboard(data) {
+  const isLight = document.body.classList.contains('light-theme');
+  const textColor = isLight ? '#1f2937' : '#e5e7eb';
+  const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+
+  const chartOptionsDefault = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: { color: textColor, font: { family: 'Inter', size: 11 } }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: gridColor },
+        ticks: { color: textColor, font: { family: 'Inter', size: 10 } }
+      },
+      y: {
+        grid: { color: gridColor },
+        ticks: { color: textColor, font: { family: 'Inter', size: 10 } }
+      }
+    }
+  };
+
+  // --- GRÁFICO 1: TOP 5 SALIDAS ANTES (MINUTOS ACUMULADOS) ---
+  const salidasPorDocente = {};
+  data.forEach(a => {
+    if (a.final_clase === 'Se fue antes' && a.minutos_final) {
+      salidasPorDocente[a.docente_nombre] = (salidasPorDocente[a.docente_nombre] || 0) + parseInt(a.minutos_final);
+    }
+  });
+  const topSalidas = Object.entries(salidasPorDocente)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  destroyChart('chart-salidas-antes');
+  chartsInstances['chart-salidas-antes'] = new Chart(document.getElementById('chart-salidas-antes'), {
+    type: 'bar',
+    data: {
+      labels: topSalidas.map(x => x[0]),
+      datasets: [{
+        label: 'Minutos Anticipados',
+        data: topSalidas.map(x => x[1]),
+        backgroundColor: 'rgba(168, 85, 247, 0.8)',
+        borderColor: '#a855f7',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...chartOptionsDefault,
+      indexAxis: 'y',
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: textColor } },
+        y: { grid: { display: false }, ticks: { color: textColor } }
+      }
+    }
+  });
+
+  // --- GRÁFICO 2: CLASES PERDIDAS VS REPUESTAS POR PROGRAMA ---
+  const programas = ['LpD', 'TUSGE', 'MpD'];
+  data.forEach(a => {
+    if (a.programa && !programas.includes(a.programa)) {
+      programas.push(a.programa);
+    }
+  });
+
+  const perdidasProg = [];
+  const repuestasProg = [];
+  programas.forEach(prog => {
+    const totalPerd = data.filter(a => a.programa === prog && a.dicto_clases === 'NO').length;
+    const totalRep = data.filter(a => a.programa === prog && a.reposicion === 'SI').length;
+    perdidasProg.push(totalPerd);
+    repuestasProg.push(totalRep);
+  });
+
+  destroyChart('chart-perdidas-repuestas');
+  chartsInstances['chart-perdidas-repuestas'] = new Chart(document.getElementById('chart-perdidas-repuestas'), {
+    type: 'bar',
+    data: {
+      labels: programas,
+      datasets: [
+        {
+          label: 'Perdidas',
+          data: perdidasProg,
+          backgroundColor: 'rgba(244, 63, 94, 0.8)',
+          borderColor: '#f43f5e',
+          borderWidth: 1,
+          borderRadius: 4
+        },
+        {
+          label: 'Repuestas',
+          data: repuestasProg,
+          backgroundColor: 'rgba(6, 182, 212, 0.8)',
+          borderColor: '#06b6d4',
+          borderWidth: 1,
+          borderRadius: 4
+        }
+      ]
+    },
+    options: chartOptionsDefault
+  });
+
+  // --- GRÁFICO 3: TOP 5 RETRASOS (MINUTOS ACUMULADOS) ---
+  const retrasosPorDocente = {};
+  data.forEach(a => {
+    if (a.inicio === 'Con Retraso' && a.minutos_atraso) {
+      retrasosPorDocente[a.docente_nombre] = (retrasosPorDocente[a.docente_nombre] || 0) + parseInt(a.minutos_atraso);
+    }
+  });
+  const topRetrasos = Object.entries(retrasosPorDocente)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  destroyChart('chart-retrasos');
+  chartsInstances['chart-retrasos'] = new Chart(document.getElementById('chart-retrasos'), {
+    type: 'bar',
+    data: {
+      labels: topRetrasos.map(x => x[0]),
+      datasets: [{
+        label: 'Minutos de Atraso',
+        data: topRetrasos.map(x => x[1]),
+        backgroundColor: 'rgba(249, 115, 22, 0.8)',
+        borderColor: '#f97316',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...chartOptionsDefault,
+      indexAxis: 'y',
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: textColor } },
+        y: { grid: { display: false }, ticks: { color: textColor } }
+      }
+    }
+  });
+
+  // --- GRÁFICO 4: MODALIDAD (DONUT) ---
+  const presenciales = data.filter(a => a.dicto_clases === 'SI' && a.modalidad === 'PRESENCIAL').length;
+  const virtuales = data.filter(a => a.dicto_clases === 'SI' && a.modalidad === 'VIRTUAL').length;
+
+  destroyChart('chart-modalidad');
+  chartsInstances['chart-modalidad'] = new Chart(document.getElementById('chart-modalidad'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Presencial', 'Virtual'],
+      datasets: [{
+        data: [presenciales, virtuales],
+        backgroundColor: ['rgba(59, 130, 246, 0.85)', 'rgba(16, 185, 129, 0.85)'],
+        borderColor: isLight ? '#fff' : '#1f2937',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: textColor } }
+      }
+    }
+  });
+
+  // --- GRÁFICO 5: TOP 5 MATERIAS CON INCIDENCIAS ---
+  const incidenciasMateria = {};
+  data.forEach(a => {
+    const tieneIncidencia = (a.dicto_clases === 'NO' || a.inicio === 'Con Retraso' || a.final_clase === 'Se fue antes');
+    if (tieneIncidencia) {
+      incidenciasMateria[a.materia_nombre] = (incidenciasMateria[a.materia_nombre] || 0) + 1;
+    }
+  });
+  const topMaterias = Object.entries(incidenciasMateria)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  destroyChart('chart-materias-incidencias');
+  chartsInstances['chart-materias-incidencias'] = new Chart(document.getElementById('chart-materias-incidencias'), {
+    type: 'bar',
+    data: {
+      labels: topMaterias.map(x => x[0]),
+      datasets: [{
+        label: 'Cantidad Incidencias',
+        data: topMaterias.map(x => x[1]),
+        backgroundColor: 'rgba(236, 72, 153, 0.8)',
+        borderColor: '#ec4899',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      ...chartOptionsDefault,
+      indexAxis: 'y',
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: textColor } },
+        y: { grid: { display: false }, ticks: { color: textColor } }
+      }
+    }
+  });
+
+  // --- GRÁFICO 6: RESUMEN IDIOMA INGLÉS (DONUT) ---
+  const materiasIngles = maestrosData.materias.filter(m => m.idioma_predeterminado === 'Inglés').map(m => m.id);
+  const inglesSi = data.filter(a => a.dicto_clases === 'SI' && a.idioma_dictado === 'Inglés').length;
+  const inglesNo = data.filter(a => a.dicto_clases === 'SI' && a.idioma_dictado === 'Español' && materiasIngles.includes(a.materia_id)).length;
+
+  dbValIdiomaIng.textContent = inglesSi;
+
+  destroyChart('chart-idioma');
+  chartsInstances['chart-idioma'] = new Chart(document.getElementById('chart-idioma'), {
+    type: 'doughnut',
+    data: {
+      labels: ['En inglés', 'En Español (Desvío)'],
+      datasets: [{
+        data: [inglesSi, inglesNo],
+        backgroundColor: ['rgba(99, 102, 241, 0.85)', 'rgba(244, 63, 94, 0.85)'],
+        borderColor: isLight ? '#fff' : '#1f2937',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+
+  // --- GRÁFICO 7: CUMPLIMIENTO IDIOMA POR ASIGNATURA ---
+  const materiasPlanIngles = maestrosData.materias.filter(m => m.idioma_predeterminado === 'Inglés');
+  const etiquetasMaterias = [];
+  const dictadoInglesList = [];
+  const dictadoEspanolList = [];
+
+  materiasPlanIngles.forEach(m => {
+    const asistenciasMateria = data.filter(a => a.materia_id === m.id && a.dicto_clases === 'SI');
+    if (asistenciasMateria.length > 0) {
+      etiquetasMaterias.push(m.nombre);
+      const enIngles = asistenciasMateria.filter(a => a.idioma_dictado === 'Inglés').length;
+      const enEspanol = asistenciasMateria.filter(a => a.idioma_dictado === 'Español').length;
+      dictadoInglesList.push(enIngles);
+      dictadoEspanolList.push(enEspanol);
+    }
+  });
+
+  destroyChart('chart-cumplimiento-idioma');
+  chartsInstances['chart-cumplimiento-idioma'] = new Chart(document.getElementById('chart-cumplimiento-idioma'), {
+    type: 'bar',
+    data: {
+      labels: etiquetasMaterias,
+      datasets: [
+        {
+          label: 'En inglés',
+          data: dictadoInglesList,
+          backgroundColor: 'rgba(16, 185, 129, 0.85)',
+          borderColor: '#10b981',
+          borderWidth: 1,
+          borderRadius: 4
+        },
+        {
+          label: 'En Español (Desvío)',
+          data: dictadoEspanolList,
+          backgroundColor: 'rgba(249, 115, 22, 0.85)',
+          borderColor: '#f97316',
+          borderWidth: 1,
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      ...chartOptionsDefault,
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: textColor,
+            font: { family: 'Inter', size: 9 },
+            maxRotation: 45,
+            minRotation: 15
+          }
+        },
+        y: { grid: { color: gridColor }, ticks: { color: textColor } }
+      }
+    }
+  });
+
+  // --- GRÁFICO 8: TENDENCIA DE REGISTROS POR DÍA ---
+  const registrosPorFecha = {};
+  data.forEach(a => {
+    registrosPorFecha[a.fecha] = (registrosPorFecha[a.fecha] || 0) + 1;
+  });
+  
+  const fechasOrdenadas = Object.keys(registrosPorFecha).sort();
+  const valoresTendencia = fechasOrdenadas.map(f => registrosPorFecha[f]);
+  const etiquetasFechas = fechasOrdenadas.map(f => {
+    const partes = f.split('-');
+    if (partes.length === 3) return `${partes[2]}/${partes[1]}`;
+    return f;
+  });
+
+  destroyChart('chart-tendencia');
+  chartsInstances['chart-tendencia'] = new Chart(document.getElementById('chart-tendencia'), {
+    type: 'line',
+    data: {
+      labels: etiquetasFechas,
+      datasets: [{
+        label: 'Clases Registradas',
+        data: valoresTendencia,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 2,
+        pointBackgroundColor: '#3b82f6'
+      }]
+    },
+    options: {
+      ...chartOptionsDefault,
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: textColor, font: { family: 'Inter', size: 9 } }
+        },
+        y: { grid: { color: gridColor }, ticks: { color: textColor } }
+      }
+    }
+  });
+}
+
+// Auxiliar para destruir gráfico
+function destroyChart(chartId) {
+  if (chartsInstances[chartId]) {
+    chartsInstances[chartId].destroy();
+    delete chartsInstances[chartId];
+  }
+}
+
+// Rellenar las tablas de detalles del Dashboard
+function renderizarTablasIncidencias(data) {
+  // 1. LLEGADAS TARDE
+  const tbodyTarde = document.getElementById('db-table-tarde-tbody');
+  tbodyTarde.innerHTML = '';
+  const tardios = data.filter(a => a.dicto_clases === 'SI' && a.inicio === 'Con Retraso')
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  
+  if (tardios.length === 0) {
+    tbodyTarde.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Sin incidencias de atrasos</td></tr>';
+  } else {
+    tardios.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${t.docente_nombre}</strong></td>
+        <td>${t.materia_nombre}</td>
+        <td><span class="db-badge orange">+${t.minutos_atraso} min</span></td>
+        <td>${formatearFechaTabla(t.fecha)}</td>
+      `;
+      tbodyTarde.appendChild(tr);
+    });
+  }
+
+  // 2. SALIDAS ANTES
+  const tbodySalida = document.getElementById('db-table-salida-tbody');
+  tbodySalida.innerHTML = '';
+  const anticipados = data.filter(a => a.dicto_clases === 'SI' && a.final_clase === 'Se fue antes')
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  
+  if (anticipados.length === 0) {
+    tbodySalida.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Sin incidencias de retiro anticipado</td></tr>';
+  } else {
+    anticipados.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${s.docente_nombre}</strong></td>
+        <td>${s.materia_nombre}</td>
+        <td><span class="db-badge purple">-${s.minutos_final} min</span></td>
+        <td>${formatearFechaTabla(s.fecha)}</td>
+      `;
+      tbodySalida.appendChild(tr);
+    });
+  }
+
+  // 3. CLASES NO DICTADAS
+  const tbodyNoDictada = document.getElementById('db-table-nodictada-tbody');
+  tbodyNoDictada.innerHTML = '';
+  const noDictadas = data.filter(a => a.dicto_clases === 'NO')
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  
+  if (noDictadas.length === 0) {
+    tbodyNoDictada.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Sin clases perdidas</td></tr>';
+  } else {
+    noDictadas.forEach(nd => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${nd.docente_nombre}</strong></td>
+        <td>${nd.materia_nombre}</td>
+        <td style="color:#ef4444; font-style:italic;">${nd.comentarios || 'Sin observaciones'}</td>
+        <td>${formatearFechaTabla(nd.fecha)}</td>
+      `;
+      tbodyNoDictada.appendChild(tr);
+    });
+  }
+
+  // 4. CLASES REPUESTAS
+  const tbodyRepuesta = document.getElementById('db-table-repuesta-tbody');
+  tbodyRepuesta.innerHTML = '';
+  const rep = data.filter(a => a.reposicion === 'SI')
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  
+  if (rep.length === 0) {
+    tbodyRepuesta.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Sin clases repuestas</td></tr>';
+  } else {
+    rep.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${r.docente_nombre}</strong></td>
+        <td>${r.materia_nombre}</td>
+        <td style="color:#06b6d4;">Clase repuesta</td>
+        <td>${formatearFechaTabla(r.fecha)}</td>
+      `;
+      tbodyRepuesta.appendChild(tr);
+    });
+  }
+
+  // 5. INCUMPLIMIENTO DE IDIOMA
+  const tbodyIdioma = document.getElementById('db-table-idioma-tbody');
+  tbodyIdioma.innerHTML = '';
+  const materiasInglesIds = maestrosData.materias.filter(m => m.idioma_predeterminado === 'Inglés').map(m => m.id);
+  const desviosIdioma = data.filter(a => a.dicto_clases === 'SI' && a.idioma_dictado === 'Español' && materiasInglesIds.includes(a.materia_id))
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+  if (desviosIdioma.length === 0) {
+    tbodyIdioma.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Sin incumplimientos de idioma</td></tr>';
+  } else {
+    desviosIdioma.forEach(di => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${di.docente_nombre}</strong></td>
+        <td>${di.materia_nombre}</td>
+        <td>${formatearFechaTabla(di.fecha)}</td>
+      `;
+      tbodyIdioma.appendChild(tr);
+    });
+  }
+
+  // 6. MODALIDAD VIRTUAL
+  const tbodyVirtual = document.getElementById('db-table-virtual-tbody');
+  tbodyVirtual.innerHTML = '';
+  const virt = data.filter(a => a.dicto_clases === 'SI' && a.modalidad === 'VIRTUAL')
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+  if (virt.length === 0) {
+    tbodyVirtual.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Sin clases virtuales registradas</td></tr>';
+  } else {
+    virt.forEach(v => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${v.docente_nombre}</strong></td>
+        <td>${v.materia_nombre}</td>
+        <td>${formatearFechaTabla(v.fecha)}</td>
+      `;
+      tbodyVirtual.appendChild(tr);
+    });
+  }
+}
+
+// Formatear fechas para listados de incidencias (Ej. 2026-05-15 -> 15/05/2026)
+function formatearFechaTabla(fechaString) {
+  if (!fechaString) return '-';
+  const partes = fechaString.split('-');
+  if (partes.length === 3) {
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  }
+  return fechaString;
 }

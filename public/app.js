@@ -2525,7 +2525,22 @@ function renderizarGraficosDashboard(data) {
         }
       ]
     },
-    options: chartOptionsDefault
+    options: {
+      ...chartOptionsDefault,
+      plugins: {
+        ...chartOptionsDefault.plugins,
+        tooltip: {
+          callbacks: {
+            afterBody: function(context) {
+              const materiaNombre = context[0].label;
+              const registrosMateria = data.filter(a => a.materia_nombre === materiaNombre && (a.dicto_clases === 'NO' || a.reposicion === 'SI'));
+              const profesores = [...new Set(registrosMateria.map(a => a.docente_nombre))];
+              return profesores.length > 0 ? 'Docente(s): ' + profesores.join(', ') : '';
+            }
+          }
+        }
+      }
+    }
   });
 
   // --- GRÁFICO 3: TOP 5 RETRASOS (MINUTOS ACUMULADOS) ---
@@ -2620,6 +2635,19 @@ function renderizarGraficosDashboard(data) {
       scales: {
         x: { grid: { color: gridColor }, ticks: { color: textColor } },
         y: { grid: { display: false }, ticks: { color: textColor } }
+      },
+      plugins: {
+        ...chartOptionsDefault.plugins,
+        tooltip: {
+          callbacks: {
+            afterBody: function(context) {
+              const materiaNombre = context[0].label;
+              const registrosMateria = data.filter(a => a.materia_nombre === materiaNombre && (a.dicto_clases === 'NO' || a.inicio === 'Con Retraso' || a.final_clase === 'Se fue antes'));
+              const profesores = [...new Set(registrosMateria.map(a => a.docente_nombre))];
+              return profesores.length > 0 ? 'Docente(s): ' + profesores.join(', ') : '';
+            }
+          }
+        }
       }
     }
   });
@@ -2629,7 +2657,8 @@ function renderizarGraficosDashboard(data) {
   const inglesSi = data.filter(a => a.dicto_clases === 'SI' && a.idioma_dictado === 'Inglés' && materiasIngles.includes(a.materia_id)).length;
   const inglesNo = data.filter(a => a.dicto_clases === 'SI' && a.idioma_dictado === 'Español' && materiasIngles.includes(a.materia_id)).length;
 
-  dbValIdiomaIng.textContent = inglesSi;
+  const totalClasesIngles = inglesSi + inglesNo;
+  dbValIdiomaIng.textContent = totalClasesIngles > 0 ? `${inglesSi}/${totalClasesIngles}` : '0/0';
 
   destroyChart('chart-idioma');
   chartsInstances['chart-idioma'] = new Chart(document.getElementById('chart-idioma'), {
@@ -2648,7 +2677,14 @@ function renderizarGraficosDashboard(data) {
       maintainAspectRatio: false,
       cutout: '70%',
       plugins: {
-        legend: { display: false }
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: textColor,
+            font: { family: 'Inter', size: 10 }
+          }
+        }
       }
     }
   });

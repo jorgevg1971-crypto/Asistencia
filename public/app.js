@@ -2736,6 +2736,19 @@ function renderizarGraficosDashboard(data) {
           }
         },
         y: { grid: { color: gridColor }, ticks: { color: textColor } }
+      },
+      plugins: {
+        ...chartOptionsDefault.plugins,
+        tooltip: {
+          callbacks: {
+            afterBody: function(context) {
+              const materiaNombre = context[0].label;
+              const registrosMateria = data.filter(a => a.materia_nombre === materiaNombre && a.dicto_clases === 'SI');
+              const profesores = [...new Set(registrosMateria.map(a => a.docente_nombre))];
+              return profesores.length > 0 ? 'Docente(s): ' + profesores.join(', ') : '';
+            }
+          }
+        }
       }
     }
   });

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ePC Asistencia - Dashboard Analítico Público</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Estilos Globales -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <style>
+    /* Ajustes específicos para el Dashboard público */
+    .app-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+    .public-header {
+      margin-top: 24px;
+      margin-bottom: 24px;
+    }
+    /* El dashboard público se muestra siempre al 100% visible */
+    #section-dashboard {
+      display: block !important;
+    }
+  </style>
+</head>
+<body class="light-theme"> <!-- Por defecto Tema Claro para mejor legibilidad, se puede alternar -->
+  
+  <div class="app-container">
+    <!-- Cabecera Premium -->
+    <header class="app-header public-header">
+      <div class="header-left">
+        <div class="logo-box">
+          <i data-lucide="check-square" class="logo-icon"></i>
+        </div>
+        <div class="logo-text">
+          <h1>ePC Asistencia</h1>
+          <p>Dashboard Público de Control de Asistencia y Reportes</p>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <!-- Indicador de Fecha -->
+        <div class="header-date">
+          <i data-lucide="calendar"></i>
+          <span id="current-date-text">Cargando fecha...</span>
+        </div>
+        
+        <!-- Alternar Tema -->
+        <button class="icon-btn" id="theme-toggle-btn" title="Alternar modo claro/oscuro">
+          <i data-lucide="moon" id="theme-toggle-icon"></i>
+        </button>
+
+        <!-- Botón Exportar PDF -->
+        <button class="pdf-btn" id="dashboard-pdf-btn">
+          <i data-lucide="file-text"></i> Exportar PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Sección del Dashboard Analítico -->
+    <div id="section-dashboard" class="app-section">
+      <!-- Barra de Filtros del Dashboard -->
+      <section class="dashboard-filters-card">
+        <div class="db-filters-grid">
+          <div class="form-group">
+            <label for="db_filter_desde"><i data-lucide="calendar"></i> Desde</label>
+            <input type="date" id="db_filter_desde">
+          </div>
+          <div class="form-group">
+            <label for="db_filter_hasta"><i data-lucide="calendar"></i> Hasta</label>
+            <input type="date" id="db_filter_hasta">
+          </div>
+          <div class="form-group">
+            <label for="db_filter_programa"><i data-lucide="graduation-cap"></i> Programa</label>
+            <select id="db_filter_programa">
+              <option value="TODOS">Todos</option>
+              <option value="LpD">LpD</option>
+              <option value="MpD">MpD</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="db_filter_profesor"><i data-lucide="user"></i> Profesor</label>
+            <select id="db_filter_profesor">
+              <!-- Dinámico -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="db_filter_materia"><i data-lucide="book-open"></i> Materia</label>
+            <select id="db_filter_materia">
+              <!-- Dinámico -->
+            </select>
+          </div>
+          <div class="form-group search-filter-group">
+            <label for="db_filter_search"><i data-lucide="search"></i> Buscador Global</label>
+            <div class="input-inline-group">
+              <input type="text" id="db_filter_search" placeholder="Buscar texto...">
+              <button class="reset-filters-btn" id="db-reset-filters-btn" title="Reiniciar filtros">
+                <i data-lucide="rotate-ccw"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Rejilla de Métricas Principales (Tarjetas Superiores) -->
+      <div class="db-metrics-grid">
+        <div class="db-metric-card" id="db-card-total">
+          <i data-lucide="copy" class="db-metric-icon blue-c"></i>
+          <span class="db-metric-subtitle">Registros</span>
+          <span class="db-metric-value" id="db-val-total">0</span>
+          <span class="db-metric-trend text-muted">Total analizados</span>
+        </div>
+        <div class="db-metric-card" id="db-card-atrasos">
+          <i data-lucide="clock" class="db-metric-icon orange-c"></i>
+          <span class="db-metric-subtitle">Atrasos</span>
+          <span class="db-metric-value" id="db-val-atrasos">0</span>
+          <span class="db-metric-trend orange-t">Llegaron tarde</span>
+        </div>
+        <div class="db-metric-card" id="db-card-salidas">
+          <i data-lucide="log-out" class="db-metric-icon purple-c"></i>
+          <span class="db-metric-subtitle">Salidas Antes</span>
+          <span class="db-metric-value" id="db-val-salidas">0</span>
+          <span class="db-metric-trend purple-t">Se retiraron antes</span>
+        </div>
+        <div class="db-metric-card" id="db-card-perdidas">
+          <i data-lucide="x-octagon" class="db-metric-icon red-c"></i>
+          <span class="db-metric-subtitle">Perdidas</span>
+          <span class="db-metric-value" id="db-val-perdidas">0</span>
+          <span class="db-metric-trend red-t">Clases no dictadas</span>
+        </div>
+        <div class="db-metric-card" id="db-card-repuestas">
+          <i data-lucide="refresh-cw" class="db-metric-icon cyan-c"></i>
+          <span class="db-metric-subtitle">Repuestas</span>
+          <span class="db-metric-value" id="db-val-repuestas">0</span>
+          <span class="db-metric-trend cyan-t">Clases repuestas</span>
+        </div>
+        <div class="db-metric-card" id="db-card-virtuales">
+          <i data-lucide="laptop" class="db-metric-icon green-c"></i>
+          <span class="db-metric-subtitle">Virtuales</span>
+          <span class="db-metric-value" id="db-val-virtuales">0</span>
+          <span class="db-metric-trend green-t">Clases virtuales</span>
+        </div>
+      </div>
+
+      <!-- Fila de Gráficos 1 (Retrasos, Clases Perdidas/Repuestas, Salidas Antes, Modalidad) -->
+      <div class="db-charts-row">
+        <!-- Gráfico 1: Top 5 Salidas Antes -->
+        <div class="db-chart-card">
+          <h4><i data-lucide="trending-down" class="purple-c"></i> Top 5 Salidas Antes (Minutos acumulados)</h4>
+          <div class="canvas-container">
+            <canvas id="chart-salidas-antes"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico 2: Clases Perdidas vs Repuestas por Programa -->
+        <div class="db-chart-card">
+          <h4><i data-lucide="bar-chart-2" class="red-c"></i> Clases Perdidas vs Repuestas por Programa</h4>
+          <div class="canvas-container">
+            <canvas id="chart-perdidas-vs-repuestas"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico 3: Top 5 Retrasos -->
+        <div class="db-chart-card">
+          <h4><i data-lucide="trending-up" class="orange-c"></i> Top 5 Retrasos (Minutos acumulados)</h4>
+          <div class="canvas-container">
+            <canvas id="chart-retrasos"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico 4: Modalidad de Clases -->
+        <div class="db-chart-card">
+          <h4><i data-lucide="pie-chart" class="blue-c"></i> Modalidad de Clases (Presencial vs Virtual)</h4>
+          <div class="canvas-container">
+            <canvas id="chart-modalidad"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fila de Gráficos 2 (Idioma, Cumplimiento Idioma Materias, Top Materias Incidencias, Tendencia Temporal) -->
+      <div class="db-charts-row">
+        <!-- Gráfico 5: Top 5 Materias con Incidencias -->
+        <div class="db-chart-card">
+          <h4><i data-lucide="book-x" style="color: #ec4899;"></i> Top 5 Materias con Incidencias</h4>
+          <div class="canvas-container">
+            <canvas id="chart-materias-incidencias"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico 6: Resumen Idioma Dictado -->
+        <div class="db-chart-card">
+          <h4><i data-lucide="languages" style="color: #6366f1;"></i> Resumen Idioma Dictado (Materia de ING)</h4>
+          <div class="canvas-container donut-central-container">
+            <canvas id="chart-idioma"></canvas>
+            <div class="donut-central-text">
+              <span class="donut-num" id="db-val-idioma-ing">0</span>
+              <span class="donut-lbl">Clases ING</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfico 7: Cumplimiento Idioma por Materia/ING -->
+        <div class="db-chart-card">
+          <h4><i data-lucide="check-circle" style="color: #10b981;"></i> Cumplimiento Idioma por Materia / ING</h4>
+          <div class="canvas-container">
+            <canvas id="chart-cumplimiento-idioma"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico 8: Tendencia de Registros -->
+        <div class="db-chart-card">
+          <h4><i data-lucide="activity" class="blue-c"></i> Tendencia de Registros por Fecha</h4>
+          <div class="canvas-container">
+            <canvas id="chart-tendencia"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Listados Detallados de Incidencias (Tablas Compactas) -->
+      <div class="db-tables-grid">
+        <!-- 1. Llegadas Tarde -->
+        <div class="db-table-card">
+          <h4><i data-lucide="alert-circle" class="orange-c"></i> Llegadas Tarde</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Minutos</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-retrasos-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. Salidas Antes -->
+        <div class="db-table-card">
+          <h4><i data-lucide="log-out" class="purple-c"></i> Salidas Anticipadas</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Minutos</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-salida-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. Clases No Dictadas -->
+        <div class="db-table-card">
+          <h4><i data-lucide="x-circle" class="red-c"></i> Clases No Dictadas</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Observación</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-nodictada-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 4. Clases Repuestas -->
+        <div class="db-table-card">
+          <h4><i data-lucide="refresh-cw" class="cyan-c"></i> Clases Repuestas</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-repuesta-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5. Desvíos de Idioma (Materia de Inglés dictada en Español) -->
+        <div class="db-table-card">
+          <h4><i data-lucide="globe-2" style="color: #6366f1;"></i> Desvíos de Idioma (ING dictado en ES)</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-idioma-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 6. Modalidad Virtual -->
+        <div class="db-table-card">
+          <h4><i data-lucide="laptop" class="green-c"></i> Modalidad Virtual</h4>
+          <div class="db-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Profesor</th>
+                  <th>Materia</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-virtual-tbody">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="toast" style="display: none;">
+      <i id="toast-icon" data-lucide="info"></i>
+      <span id="toast-message">Notificación</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>&copy; 2026 ePC Asistencia. Todos los derechos reservados. | Dashboard Público de Control Académico</p>
+    </footer>
+  </div>
+
+  <!-- Script del Dashboard Público -->
+  <script src="dashboard-app.js"></script>
+</body>
+</html>

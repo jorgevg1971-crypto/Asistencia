@@ -6,6 +6,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+
+// Ruta pública directa para el Dashboard sin necesidad de password
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Inicializar base de datos SQLite (soporta rutas de red compartidas)

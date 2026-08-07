@@ -20,51 +20,41 @@
   <link rel="stylesheet" href="styles.css">
   
   <style>
-    /* Ajustes específicos para el Dashboard público */
-    .app-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 16px;
-    }
-    .public-header {
-      margin-top: 24px;
-      margin-bottom: 24px;
-    }
     /* El dashboard público se muestra siempre al 100% visible */
     #section-dashboard {
       display: block !important;
     }
   </style>
 </head>
-<body class="light-theme"> <!-- Por defecto Tema Claro para mejor legibilidad, se puede alternar -->
+<body class="light-theme">
   
   <div class="app-container">
-    <!-- Cabecera Premium -->
-    <header class="app-header public-header">
-      <div class="header-left">
-        <div class="logo-box">
-          <i data-lucide="check-square" class="logo-icon"></i>
+    <!-- Cabecera Idéntica -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <i data-lucide="check-square"></i>
         </div>
-        <div class="logo-text">
+        <div>
           <h1>ePC Asistencia</h1>
-          <p>Dashboard Público de Control de Asistencia y Reportes</p>
+          <p class="subtitle">Sistema de Control de Asistencia de Docentes a Clases</p>
         </div>
       </div>
       
-      <div class="header-right">
+      <div class="header-actions">
         <!-- Indicador de Fecha -->
-        <div class="header-date">
+        <div class="date-badge">
           <i data-lucide="calendar"></i>
           <span id="current-date-text">Cargando fecha...</span>
         </div>
         
         <!-- Alternar Tema -->
-        <button class="icon-btn" id="theme-toggle-btn" title="Alternar modo claro/oscuro">
-          <i data-lucide="moon" id="theme-toggle-icon"></i>
+        <button id="theme-toggle-btn" class="theme-toggle-btn" title="Cambiar tema claro/oscuro">
+          <i data-lucide="sun" id="theme-toggle-icon"></i>
         </button>
 
         <!-- Botón Exportar PDF -->
-        <button class="pdf-btn" id="dashboard-pdf-btn">
+        <button id="dashboard-pdf-btn" class="admin-btn pdf-btn" style="background: #10b981; color: white;" title="Exportar Dashboard a PDF">
           <i data-lucide="file-text"></i> Exportar PDF
         </button>
       </div>

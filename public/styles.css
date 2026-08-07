@@ -1884,7 +1884,14 @@ body.light-theme .nav-tab-btn.active {
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+  cursor: pointer;
+  transition: border-color var(--transition-smooth), transform var(--transition-smooth), box-shadow var(--transition-smooth);
+}
+
+.db-metric-card.active {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2), var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .db-metric-card:hover {

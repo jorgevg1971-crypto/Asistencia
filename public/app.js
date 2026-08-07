@@ -184,6 +184,13 @@ const dbFilterSearch = document.getElementById('db_filter_search');
 const dbResetFiltersBtn = document.getElementById('db-reset-filters-btn');
 
 // --- Métricas del Dashboard ---
+const dbCardTotal = document.getElementById('db-card-total');
+const dbCardAtrasos = document.getElementById('db-card-atrasos');
+const dbCardSalidas = document.getElementById('db-card-salidas');
+const dbCardPerdidas = document.getElementById('db-card-perdidas');
+const dbCardRepuestas = document.getElementById('db-card-repuestas');
+const dbCardVirtuales = document.getElementById('db-card-virtuales');
+
 const dbValTotal = document.getElementById('db-val-total');
 const dbValAtrasos = document.getElementById('db-val-atrasos');
 const dbValSalidas = document.getElementById('db-val-salidas');
@@ -194,6 +201,7 @@ const dbValIdiomaIng = document.getElementById('db-val-idioma-ing');
 
 // Instancias de Chart.js activas
 let chartsInstances = {};
+let dbMetricFilter = null; // 'atrasos', 'salidas', 'perdidas', 'repuestas', 'virtuales' o null (todos)
 
 // Inicialización de la Aplicación
 document.addEventListener('DOMContentLoaded', () => {
@@ -1318,6 +1326,48 @@ function registrarEventListeners() {
       window.print();
     });
   }
+
+  // --- Event Listeners de las Tarjetas Métricas del Dashboard (Filtros rápidos) ---
+  const metricCards = [
+    { card: dbCardTotal, filterVal: null },
+    { card: dbCardAtrasos, filterVal: 'atrasos' },
+    { card: dbCardSalidas, filterVal: 'salidas' },
+    { card: dbCardPerdidas, filterVal: 'perdidas' },
+    { card: dbCardRepuestas, filterVal: 'repuestas' },
+    { card: dbCardVirtuales, filterVal: 'virtuales' }
+  ];
+
+  metricCards.forEach(({ card, filterVal }) => {
+    if (card) {
+      card.addEventListener('click', () => {
+        // Alternar selección
+        if (dbMetricFilter === filterVal) {
+          dbMetricFilter = null; // Desactivar si se pulsa la misma
+        } else {
+          dbMetricFilter = filterVal;
+        }
+
+        // Actualizar estados visuales de clases activas
+        metricCards.forEach(c => {
+          if (c.card) {
+            if (dbMetricFilter === c.filterVal) {
+              c.card.classList.add('active');
+            } else {
+              c.card.classList.remove('active');
+            }
+          }
+        });
+
+        actualizarDashboard();
+        
+        if (dbMetricFilter) {
+          showToast(`Dashboard filtrado por: ${card.querySelector('.db-metric-subtitle').textContent}`, 'info');
+        } else {
+          showToast('Dashboard: Filtro de tarjeta removido', 'info');
+        }
+      });
+    }
+  });
 }
 
 // Alternar entre modo de entrada de Docente (individual / masivo)
@@ -2321,13 +2371,13 @@ function actualizarDashboard() {
     return true;
   });
 
-  // 1. Calcular y rellenar métricas superiores
+  // 1. Calcular y rellenar métricas superiores (basadas en la data base filtrada globalmente)
   const total = dataFiltrada.length;
   const atrasos = dataFiltrada.filter(a => a.dicto_clases === 'SI' && a.inicio === 'Con Retraso').length;
   const salidas = dataFiltrada.filter(a => a.dicto_clases === 'SI' && a.final_clase === 'Se fue antes').length;
   const perdidas = dataFiltrada.filter(a => a.dicto_clases === 'NO').length;
   const repuestas = dataFiltrada.filter(a => a.reposicion === 'SI').length;
-  const virtuales = dataFiltrada.filter(a => a.dicto_clases === 'SI' && a.modalidad === 'VIRTUAL').length;
+  const virtuales = dataFiltrada.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'VIRTUAL').length;
 
   dbValTotal.textContent = total;
   dbValAtrasos.textContent = atrasos;
@@ -2336,11 +2386,27 @@ function actualizarDashboard() {
   dbValRepuestas.textContent = repuestas;
   dbValVirtuales.textContent = virtuales;
 
+  // Aplicar filtro por tarjeta seleccionada si existe
+  let dataFinal = dataFiltrada;
+  if (dbMetricFilter) {
+    if (dbMetricFilter === 'atrasos') {
+      dataFinal = dataFiltrada.filter(a => a.dicto_clases === 'SI' && a.inicio === 'Con Retraso');
+    } else if (dbMetricFilter === 'salidas') {
+      dataFinal = dataFiltrada.filter(a => a.dicto_clases === 'SI' && a.final_clase === 'Se fue antes');
+    } else if (dbMetricFilter === 'perdidas') {
+      dataFinal = dataFiltrada.filter(a => a.dicto_clases === 'NO');
+    } else if (dbMetricFilter === 'repuestas') {
+      dataFinal = dataFiltrada.filter(a => a.reposicion === 'SI');
+    } else if (dbMetricFilter === 'virtuales') {
+      dataFinal = dataFiltrada.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'VIRTUAL');
+    }
+  }
+
   // 2. Renderizar gráficos
-  renderizarGraficosDashboard(dataFiltrada);
+  renderizarGraficosDashboard(dataFinal);
 
   // 3. Renderizar listados de incidencias compactos
-  renderizarTablasIncidencias(dataFiltrada);
+  renderizarTablasIncidencias(dataFinal);
 }
 
 // Renderizar gráficos de Chart.js con diseño premium claro/oscuro
@@ -2484,8 +2550,8 @@ function renderizarGraficosDashboard(data) {
   });
 
   // --- GRÁFICO 4: MODALIDAD (DONUT) ---
-  const presenciales = data.filter(a => a.dicto_clases === 'SI' && a.modalidad === 'PRESENCIAL').length;
-  const virtuales = data.filter(a => a.dicto_clases === 'SI' && a.modalidad === 'VIRTUAL').length;
+  const presenciales = data.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'PRESENCIAL').length;
+  const virtuales = data.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'VIRTUAL').length;
 
   destroyChart('chart-modalidad');
   chartsInstances['chart-modalidad'] = new Chart(document.getElementById('chart-modalidad'), {
@@ -2793,7 +2859,7 @@ function renderizarTablasIncidencias(data) {
   // 6. MODALIDAD VIRTUAL
   const tbodyVirtual = document.getElementById('db-table-virtual-tbody');
   tbodyVirtual.innerHTML = '';
-  const virt = data.filter(a => a.dicto_clases === 'SI' && a.modalidad === 'VIRTUAL')
+  const virt = data.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'VIRTUAL')
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   if (virt.length === 0) {

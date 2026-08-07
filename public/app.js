@@ -1793,7 +1793,7 @@ async function handleFormSubmit(e) {
     a.fecha === fechaInput.value && 
     a.docente_id === docenteId && 
     a.materia_id === materiaId &&
-    a.id !== asistenciaEditId
+    String(a.id) !== String(asistenciaEditId)
   );
 
   if (yaExiste) {

@@ -2377,7 +2377,7 @@ function actualizarDashboard() {
   const salidas = dataFiltrada.filter(a => a.dicto_clases === 'SI' && a.final_clase === 'Se fue antes').length;
   const perdidas = dataFiltrada.filter(a => a.dicto_clases === 'NO').length;
   const repuestas = dataFiltrada.filter(a => a.reposicion === 'SI').length;
-  const virtuales = dataFiltrada.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'VIRTUAL').length;
+  const virtuales = dataFiltrada.filter(a => a.dicto_clases === 'SI' && String(a.clase || '').toUpperCase().trim() === 'VIRTUAL').length;
 
   dbValTotal.textContent = total;
   dbValAtrasos.textContent = atrasos;
@@ -2398,7 +2398,7 @@ function actualizarDashboard() {
     } else if (dbMetricFilter === 'repuestas') {
       dataFinal = dataFiltrada.filter(a => a.reposicion === 'SI');
     } else if (dbMetricFilter === 'virtuales') {
-      dataFinal = dataFiltrada.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'VIRTUAL');
+      dataFinal = dataFiltrada.filter(a => a.dicto_clases === 'SI' && String(a.clase || '').toUpperCase().trim() === 'VIRTUAL');
     }
   }
 
@@ -2550,8 +2550,8 @@ function renderizarGraficosDashboard(data) {
   });
 
   // --- GRÁFICO 4: MODALIDAD (DONUT) ---
-  const presenciales = data.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'PRESENCIAL').length;
-  const virtuales = data.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'VIRTUAL').length;
+  const presenciales = data.filter(a => a.dicto_clases === 'SI' && String(a.clase || '').toUpperCase().trim() === 'PRESENCIAL').length;
+  const virtuales = data.filter(a => a.dicto_clases === 'SI' && String(a.clase || '').toUpperCase().trim() === 'VIRTUAL').length;
 
   destroyChart('chart-modalidad');
   chartsInstances['chart-modalidad'] = new Chart(document.getElementById('chart-modalidad'), {
@@ -2859,7 +2859,7 @@ function renderizarTablasIncidencias(data) {
   // 6. MODALIDAD VIRTUAL
   const tbodyVirtual = document.getElementById('db-table-virtual-tbody');
   tbodyVirtual.innerHTML = '';
-  const virt = data.filter(a => a.dicto_clases === 'SI' && String(a.modalidad || '').toUpperCase().trim() === 'VIRTUAL')
+  const virt = data.filter(a => a.dicto_clases === 'SI' && String(a.clase || '').toUpperCase().trim() === 'VIRTUAL')
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   if (virt.length === 0) {

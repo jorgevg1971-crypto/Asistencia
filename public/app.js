@@ -1826,57 +1826,9 @@ async function handleFormSubmit(e) {
     return;
   }
 
-  // Preparar datos
-  const docenteId = parseInt(docenteIdInput.value);
-  const docente = maestrosData.docentes.find(d => d.id === docenteId);
-  
-  const materiaId = parseInt(materiaIdInput.value);
-  const materia = maestrosData.materias.find(m => m.id === materiaId);
-
-  const gestionId = parseInt(gestionSelect.value);
-  const gestion = maestrosData.gestiones.find(g => g.id === gestionId);
-
-  const dictoClases = dictoSiRadio.checked ? 'SI' : 'NO';
-
-  // Validar duplicados localmente y mostrar advertencia interactiva (confirm)
-  const yaExiste = asistenciasData.some(a => 
-    a.fecha === fechaInput.value && 
-    a.docente_id === docenteId && 
-    a.materia_id === materiaId &&
-    String(a.id) !== String(asistenciaEditId)
-  );
-
-  if (yaExiste) {
-    const confirmar = confirm("Esta materia ya fue registrada hoy para este profesor. ¿Deseas añadir un nuevo registro de todas formas?");
-    if (!confirmar) {
-      return;
-    }
-  }
-
-  const bodyData = {
-    fecha: fechaInput.value,
-    docente_id: docenteId,
-    docente_nombre: docente ? docente.nombre : '',
-    materia_id: materiaId,
-    materia_nombre: materia ? materia.nombre : '',
-    programa: programaInput.value,
-    gestion_id: gestionId,
-    gestion_nombre: gestion ? gestion.nombre : '',
-    dicto_clases: dictoClases,
-    clase: claseSelect.value,
-    reposicion: reposicionSelect.value,
-    inicio: inicioSelect.value,
-    minutos_atraso: minutosAtrasoInput.value || 0,
-    final_clase: finalClaseSelect.value,
-    minutos_final: minutosFinalInput.value || 0,
-    idioma_dictado: idiomaDictadoSelect.value,
-    comentarios: comentariosTextarea.value.trim(),
-    // Campos de Auditoría
-    creado_por_usuario_id: activeUser ? activeUser.id : null,
-    creado_por_usuario_nombre: activeUser ? activeUser.username : null,
-    editado_por_usuario_id: activeUser ? activeUser.id : null,
-    editado_por_usuario_nombre: activeUser ? activeUser.username : null
-  };
+  // Guardar el id de edición antes de cualquier acción
+  const isEditing = (asistenciaEditId !== null);
+  const currentEditId = asistenciaEditId;
 
   // Mostrar loading
   submitBtn.disabled = true;
@@ -1884,10 +1836,65 @@ async function handleFormSubmit(e) {
   submitBtn.querySelector('.btn-text').textContent = 'Guardando...';
 
   try {
+    // Preparar datos de forma segura
+    const docenteId = parseInt(docenteIdInput.value) || 0;
+    const docente = (maestrosData.docentes || []).find(d => d.id === docenteId);
+    
+    const materiaId = parseInt(materiaIdInput.value) || 0;
+    const materia = (maestrosData.materias || []).find(m => m.id === materiaId);
+
+    const gestionId = parseInt(gestionSelect.value) || 0;
+    const gestion = (maestrosData.gestiones || []).find(g => g.id === gestionId);
+
+    const dictoClases = dictoSiRadio.checked ? 'SI' : 'NO';
+
+    // Validar duplicados localmente y mostrar advertencia interactiva (confirm)
+    const yaExiste = asistenciasData.some(a => 
+      a.fecha === fechaInput.value && 
+      a.docente_id === docenteId && 
+      a.materia_id === materiaId &&
+      String(a.id) !== String(currentEditId)
+    );
+
+    if (yaExiste) {
+      const confirmar = confirm("Esta materia ya fue registrada hoy para este profesor. ¿Deseas añadir un nuevo registro de todas formas?");
+      if (!confirmar) {
+        submitBtn.disabled = false;
+        btnSpinner.style.display = 'none';
+        submitBtn.querySelector('.btn-text').textContent = isEditing ? 'Guardar Cambios' : 'Registrar Asistencia';
+        return;
+      }
+    }
+
+    const bodyData = {
+      fecha: fechaInput.value,
+      docente_id: docenteId,
+      docente_nombre: docente ? docente.nombre : (docenteBuscarInput.value || ''),
+      materia_id: materiaId,
+      materia_nombre: materia ? materia.nombre : (materiaBuscarInput.value || ''),
+      programa: programaInput.value,
+      gestion_id: gestionId,
+      gestion_nombre: gestion ? gestion.nombre : (gestionSelect.options[gestionSelect.selectedIndex]?.text || ''),
+      dicto_clases: dictoClases,
+      clase: claseSelect.value,
+      reposicion: reposicionSelect.value,
+      inicio: inicioSelect.value,
+      minutos_atraso: minutosAtrasoInput.value || 0,
+      final_clase: finalClaseSelect.value,
+      minutos_final: minutosFinalInput.value || 0,
+      idioma_dictado: idiomaDictadoSelect.value,
+      comentarios: comentariosTextarea.value.trim(),
+      // Campos de Auditoría
+      creado_por_usuario_id: activeUser ? activeUser.id : null,
+      creado_por_usuario_nombre: activeUser ? activeUser.username : null,
+      editado_por_usuario_id: activeUser ? activeUser.id : null,
+      editado_por_usuario_nombre: activeUser ? activeUser.username : null
+    };
+
     let res, data;
-    if (asistenciaEditId !== null) {
+    if (isEditing) {
       // Modo Edición (PUT)
-      res = await fetch(`/api/asistencias/${asistenciaEditId}`, {
+      res = await fetch(`/api/asistencias/${currentEditId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyData)

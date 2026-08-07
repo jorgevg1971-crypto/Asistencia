@@ -348,20 +348,39 @@ function renderizarGraficosDashboard(data) {
     }
   });
 
-  // 2. CLASES PERDIDAS VS REPUESTAS
-  const programas = ['LpD', 'MpD'];
-  const perdidasProg = programas.map(p => data.filter(a => a.programa === p && a.dicto_clases === 'NO').length);
-  const repuestasProg = programas.map(p => data.filter(a => a.programa === p && a.reposicion === 'SI').length);
+  // 2. CLASES PERDIDAS VS REPUESTAS (TOP 5 MATERIAS)
+  const materiasIncidencias = {};
+  data.forEach(a => {
+    const matName = a.materia_nombre;
+    if (!materiasIncidencias[matName]) {
+      materiasIncidencias[matName] = { perdidas: 0, repuestas: 0 };
+    }
+    if (a.dicto_clases === 'NO') {
+      materiasIncidencias[matName].perdidas++;
+    }
+    if (a.reposicion === 'SI') {
+      materiasIncidencias[matName].repuestas++;
+    }
+  });
 
-  destroyChart('chart-perdidas-vs-repuestas');
-  chartsInstances['chart-perdidas-vs-repuestas'] = new Chart(document.getElementById('chart-perdidas-vs-repuestas'), {
+  const topMateriasPerdidas = Object.entries(materiasIncidencias)
+    .filter(([_, stats]) => stats.perdidas > 0 || stats.repuestas > 0)
+    .sort((a, b) => b[1].perdidas - a[1].perdidas)
+    .slice(0, 5);
+
+  const materiasLabels = topMateriasPerdidas.map(x => x[0]);
+  const perdidasList = topMateriasPerdidas.map(x => x[1].perdidas);
+  const repuestasList = topMateriasPerdidas.map(x => x[1].repuestas);
+
+  destroyChart('chart-perdidas-repuestas');
+  chartsInstances['chart-perdidas-repuestas'] = new Chart(document.getElementById('chart-perdidas-repuestas'), {
     type: 'bar',
     data: {
-      labels: programas,
+      labels: materiasLabels,
       datasets: [
         {
-          label: 'Perdidas (No dictadas)',
-          data: perdidasProg,
+          label: 'No Dictadas',
+          data: perdidasList,
           backgroundColor: 'rgba(244, 63, 94, 0.8)',
           borderColor: '#f43f5e',
           borderWidth: 1,
@@ -369,7 +388,7 @@ function renderizarGraficosDashboard(data) {
         },
         {
           label: 'Repuestas',
-          data: repuestasProg,
+          data: repuestasList,
           backgroundColor: 'rgba(6, 182, 212, 0.8)',
           borderColor: '#06b6d4',
           borderWidth: 1,

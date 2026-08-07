@@ -145,75 +145,77 @@
         </div>
       </div>
 
-      <!-- Fila de Gráficos 1 (Retrasos, Clases Perdidas/Repuestas, Salidas Antes, Modalidad) -->
-      <div class="db-charts-row">
+      <!-- Rejilla de Gráficos (Fila 1 & 2) -->
+      <div class="db-charts-row-3">
         <!-- Gráfico 1: Top 5 Salidas Antes -->
         <div class="db-chart-card">
-          <h4><i data-lucide="trending-down" class="purple-c"></i> Top 5 Salidas Antes (Minutos acumulados)</h4>
-          <div class="canvas-container">
+          <h3><i data-lucide="arrow-left-right" class="morado-c"></i> Top 5 Salidas Antes (Minutos)</h3>
+          <div class="chart-canvas-container">
             <canvas id="chart-salidas-antes"></canvas>
           </div>
         </div>
 
-        <!-- Gráfico 2: Clases Perdidas vs Repuestas por Programa -->
+        <!-- Gráfico 2: Clases Perdidas vs Repuestas -->
         <div class="db-chart-card">
-          <h4><i data-lucide="bar-chart-2" class="red-c"></i> Clases Perdidas vs Repuestas por Programa</h4>
-          <div class="canvas-container">
-            <canvas id="chart-perdidas-vs-repuestas"></canvas>
+          <h3><i data-lucide="bar-chart-3" class="rojo-c"></i> Clases Perdidas vs Repuestas</h3>
+          <div class="chart-canvas-container">
+            <canvas id="chart-perdidas-repuestas"></canvas>
           </div>
         </div>
 
         <!-- Gráfico 3: Top 5 Retrasos -->
         <div class="db-chart-card">
-          <h4><i data-lucide="trending-up" class="orange-c"></i> Top 5 Retrasos (Minutos acumulados)</h4>
-          <div class="canvas-container">
+          <h3><i data-lucide="clock" class="naranja-c"></i> Top 5 Retrasos (Minutos)</h3>
+          <div class="chart-canvas-container">
             <canvas id="chart-retrasos"></canvas>
-          </div>
-        </div>
-
-        <!-- Gráfico 4: Modalidad de Clases -->
-        <div class="db-chart-card">
-          <h4><i data-lucide="pie-chart" class="blue-c"></i> Modalidad de Clases (Presencial vs Virtual)</h4>
-          <div class="canvas-container">
-            <canvas id="chart-modalidad"></canvas>
           </div>
         </div>
       </div>
 
-      <!-- Fila de Gráficos 2 (Idioma, Cumplimiento Idioma Materias, Top Materias Incidencias, Tendencia Temporal) -->
-      <div class="db-charts-row">
+      <div class="db-charts-row-3" style="margin-top: 20px;">
+        <!-- Gráfico 4: Modalidad de Clases -->
+        <div class="db-chart-card">
+          <h3><i data-lucide="shapes" class="verde-c"></i> Modalidad de Clases</h3>
+          <div class="chart-canvas-container donut">
+            <canvas id="chart-modalidad"></canvas>
+          </div>
+        </div>
+
         <!-- Gráfico 5: Top 5 Materias con Incidencias -->
         <div class="db-chart-card">
-          <h4><i data-lucide="book-x" style="color: #ec4899;"></i> Top 5 Materias con Incidencias</h4>
-          <div class="canvas-container">
+          <h3><i data-lucide="alert-circle" class="rosa-c"></i> Top 5 Materias con Incidencias</h3>
+          <div class="chart-canvas-container">
             <canvas id="chart-materias-incidencias"></canvas>
           </div>
         </div>
 
         <!-- Gráfico 6: Resumen Idioma Dictado -->
         <div class="db-chart-card">
-          <h4><i data-lucide="languages" style="color: #6366f1;"></i> Resumen Idioma Dictado (Materia de ING)</h4>
-          <div class="canvas-container donut-central-container">
-            <canvas id="chart-idioma"></canvas>
-            <div class="donut-central-text">
-              <span class="donut-num" id="db-val-idioma-ing">0</span>
-              <span class="donut-lbl">Clases ING</span>
+          <h3><i data-lucide="languages" class="indigo-c"></i> Resumen Idioma Dictado</h3>
+          <div class="donut-chart-wrapper">
+            <div class="donut-chart-box">
+              <canvas id="chart-idioma"></canvas>
+              <div class="donut-center-value" id="db-val-idioma-ing">0</div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Gráfico 7: Cumplimiento Idioma por Materia/ING -->
+      <!-- Gráfico de Cumplimiento de Idioma por Asignatura (Fila 3) -->
+      <div class="db-charts-row-1" style="margin-top: 20px;">
         <div class="db-chart-card">
-          <h4><i data-lucide="check-circle" style="color: #10b981;"></i> Cumplimiento Idioma por Materia / ING</h4>
-          <div class="canvas-container">
+          <h3><i data-lucide="check-square" class="emerald-c"></i> Cumplimiento Idioma por Materia / ING (Materias del Plan de Inglés)</h3>
+          <div class="chart-canvas-container wide">
             <canvas id="chart-cumplimiento-idioma"></canvas>
           </div>
         </div>
+      </div>
 
-        <!-- Gráfico 8: Tendencia de Registros -->
+      <!-- Gráfico de Tendencia de Clases (Fila 4) -->
+      <div class="db-charts-row-1" style="margin-top: 20px;">
         <div class="db-chart-card">
-          <h4><i data-lucide="activity" class="blue-c"></i> Tendencia de Registros por Fecha</h4>
-          <div class="canvas-container">
+          <h3><i data-lucide="trending-up" class="blue-c"></i> Tendencia de Registros por Día</h3>
+          <div class="chart-canvas-container wide">
             <canvas id="chart-tendencia"></canvas>
           </div>
         </div>

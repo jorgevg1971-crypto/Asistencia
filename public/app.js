@@ -2477,32 +2477,39 @@ function renderizarGraficosDashboard(data) {
     }
   });
 
-  // --- GRÁFICO 2: CLASES PERDIDAS VS REPUESTAS POR PROGRAMA ---
-  const programas = ['LpD', 'TUSGE', 'MpD'];
+  // --- GRÁFICO 2: CLASES PERDIDAS VS REPUESTAS (TOP 5 MATERIAS) ---
+  const materiasIncidencias = {};
   data.forEach(a => {
-    if (a.programa && !programas.includes(a.programa)) {
-      programas.push(a.programa);
+    const matName = a.materia_nombre;
+    if (!materiasIncidencias[matName]) {
+      materiasIncidencias[matName] = { perdidas: 0, repuestas: 0 };
+    }
+    if (a.dicto_clases === 'NO') {
+      materiasIncidencias[matName].perdidas++;
+    }
+    if (a.reposicion === 'SI') {
+      materiasIncidencias[matName].repuestas++;
     }
   });
 
-  const perdidasProg = [];
-  const repuestasProg = [];
-  programas.forEach(prog => {
-    const totalPerd = data.filter(a => a.programa === prog && a.dicto_clases === 'NO').length;
-    const totalRep = data.filter(a => a.programa === prog && a.reposicion === 'SI').length;
-    perdidasProg.push(totalPerd);
-    repuestasProg.push(totalRep);
-  });
+  const topMateriasPerdidas = Object.entries(materiasIncidencias)
+    .filter(([_, stats]) => stats.perdidas > 0 || stats.repuestas > 0)
+    .sort((a, b) => b[1].perdidas - a[1].perdidas)
+    .slice(0, 5);
+
+  const materiasLabels = topMateriasPerdidas.map(x => x[0]);
+  const perdidasList = topMateriasPerdidas.map(x => x[1].perdidas);
+  const repuestasList = topMateriasPerdidas.map(x => x[1].repuestas);
 
   destroyChart('chart-perdidas-repuestas');
   chartsInstances['chart-perdidas-repuestas'] = new Chart(document.getElementById('chart-perdidas-repuestas'), {
     type: 'bar',
     data: {
-      labels: programas,
+      labels: materiasLabels,
       datasets: [
         {
-          label: 'Perdidas',
-          data: perdidasProg,
+          label: 'No Dictadas',
+          data: perdidasList,
           backgroundColor: 'rgba(244, 63, 94, 0.8)',
           borderColor: '#f43f5e',
           borderWidth: 1,
@@ -2510,7 +2517,7 @@ function renderizarGraficosDashboard(data) {
         },
         {
           label: 'Repuestas',
-          data: repuestasProg,
+          data: repuestasList,
           backgroundColor: 'rgba(6, 182, 212, 0.8)',
           borderColor: '#06b6d4',
           borderWidth: 1,

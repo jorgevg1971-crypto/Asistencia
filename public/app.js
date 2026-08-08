@@ -2983,10 +2983,12 @@ function renderizarTablasIncidencias(data) {
     } else {
       materiasConFaltas.forEach(([nombreMateria, stats]) => {
         const tr = document.createElement('tr');
+        const txtFaltas = `${stats.faltas} ${stats.faltas === 1 ? 'falta' : 'faltas'}`;
+        const txtRepuestas = `${stats.repuestas} ${stats.repuestas === 1 ? 'repuesta' : 'repuestas'}`;
         tr.innerHTML = `
           <td><strong>${nombreMateria}</strong></td>
-          <td><span class="db-badge no" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.25); font-weight: bold; padding: 4px 8px; font-size: 10px;">${stats.faltas} falta(s)</span></td>
-          <td><span class="db-badge yes" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-weight: bold; padding: 4px 8px; font-size: 10px;">${stats.repuestas} repuesta(s)</span></td>
+          <td><span class="db-badge no" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.25); font-weight: bold; padding: 4px 8px; font-size: 10px; white-space: nowrap; display: inline-block;">${txtFaltas}</span></td>
+          <td><span class="db-badge yes" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-weight: bold; padding: 4px 8px; font-size: 10px; white-space: nowrap; display: inline-block;">${txtRepuestas}</span></td>
         `;
         tbodyResumenFaltas.appendChild(tr);
       });

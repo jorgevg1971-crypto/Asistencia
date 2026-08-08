@@ -46,12 +46,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Cargar Tema Guardado
   const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'light') {
-    document.body.classList.add('light-theme');
-    themeToggleIcon.setAttribute('data-lucide', 'moon');
-  } else {
+  if (savedTheme === 'dark') {
     document.body.classList.remove('light-theme');
     themeToggleIcon.setAttribute('data-lucide', 'sun');
+  } else {
+    // Por defecto (primera visita) o explícitamente claro
+    document.body.classList.add('light-theme');
+    themeToggleIcon.setAttribute('data-lucide', 'moon');
   }
 
   // Cargar Datos Iniciales del Backend

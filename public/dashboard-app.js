@@ -792,6 +792,43 @@ function renderizarTablasIncidencias(data) {
     });
   }
 
+  // 7. RESUMEN DE FALTAS VS REPUESTAS POR MATERIA
+  const tbodyResumenFaltas = document.getElementById('db-table-resumen-faltas-tbody');
+  if (tbodyResumenFaltas) {
+    tbodyResumenFaltas.innerHTML = '';
+    const resumenFaltas = {};
+    data.forEach(a => {
+      const matName = a.materia_nombre;
+      if (!resumenFaltas[matName]) {
+        resumenFaltas[matName] = { faltas: 0, repuestas: 0 };
+      }
+      if (a.dicto_clases === 'NO') {
+        resumenFaltas[matName].faltas++;
+      }
+      if (a.reposicion === 'SI') {
+        resumenFaltas[matName].repuestas++;
+      }
+    });
+
+    const materiasConFaltas = Object.entries(resumenFaltas)
+      .filter(([_, stats]) => stats.faltas > 0)
+      .sort((a, b) => b[1].faltas - a[1].faltas);
+
+    if (materiasConFaltas.length === 0) {
+      tbodyResumenFaltas.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Sin materias con faltas registradas</td></tr>';
+    } else {
+      materiasConFaltas.forEach(([nombreMateria, stats]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${nombreMateria}</strong></td>
+          <td><span class="db-badge no" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.25); font-weight: bold; padding: 4px 8px; font-size: 10px;">${stats.faltas} falta(s)</span></td>
+          <td><span class="db-badge yes" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-weight: bold; padding: 4px 8px; font-size: 10px;">${stats.repuestas} repuesta(s)</span></td>
+        `;
+        tbodyResumenFaltas.appendChild(tr);
+      });
+    }
+  }
+
   lucide.createIcons();
 }
 

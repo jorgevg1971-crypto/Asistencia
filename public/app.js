@@ -2982,11 +2982,16 @@ function renderizarTablasIncidencias(data) {
       tbodyResumenFaltas.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Sin materias con faltas registradas</td></tr>';
     } else {
       materiasConFaltas.forEach(([nombreMateria, stats]) => {
+        // Obtener docentes de esta materia en los datos filtrados actual
+        const registrosMateria = data.filter(a => a.materia_nombre === nombreMateria);
+        const profesores = [...new Set(registrosMateria.map(a => a.docente_nombre))];
+        const profesoresTexto = profesores.length > 0 ? profesores.join(', ') : 'No disponible';
+
         const tr = document.createElement('tr');
         const txtFaltas = `${stats.faltas} ${stats.faltas === 1 ? 'falta' : 'faltas'}`;
         const txtRepuestas = `${stats.repuestas} ${stats.repuestas === 1 ? 'repuesta' : 'repuestas'}`;
         tr.innerHTML = `
-          <td><strong>${nombreMateria}</strong></td>
+          <td title="Docente(s): ${profesoresTexto}" style="cursor: help;"><strong>${nombreMateria}</strong></td>
           <td><span class="db-badge no" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.25); font-weight: bold; padding: 4px 8px; font-size: 10px; white-space: nowrap; display: inline-block;">${txtFaltas}</span></td>
           <td><span class="db-badge yes" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); font-weight: bold; padding: 4px 8px; font-size: 10px; white-space: nowrap; display: inline-block;">${txtRepuestas}</span></td>
         `;

@@ -2072,7 +2072,7 @@ function renderTablaAsistencias() {
     tr.innerHTML = `
       <td class="col-fecha"><strong>${fechaFormateada}</strong></td>
       <td class="col-docente">${item.docente_nombre}</td>
-      <td class="col-materia">${item.materia_nombre}${item.reposicion === 'SI' ? ' <span class="badge puntual" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding:2px 6px; font-size:9px; border: 1px solid rgba(245, 158, 11, 0.2); gap: 2px;" title="Clase de Reposición"><i data-lucide="refresh-cw" style="width:8px; height:8px;"></i> REP</span>' : ''}</td>
+      <td class="col-materia">${item.materia_nombre}${item.reposicion === 'SI' ? ' <span class="badge rep-badge" style="padding:2px 6px; font-size:9px; gap: 2px;" title="Clase de Reposición"><i data-lucide="refresh-cw" style="width:8px; height:8px;"></i> REP</span>' : ''}</td>
       <td class="col-programa">
         <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
           <span class="badge esp">${item.programa}</span>

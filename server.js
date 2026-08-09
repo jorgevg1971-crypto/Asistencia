@@ -12,6 +12,11 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
+// Ruta pública directa para el Dashboard de TUSGE sin posibilidad de cambiar de programa
+app.get('/dashboard-tusge', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Inicializar base de datos SQLite (soporta rutas de red compartidas)

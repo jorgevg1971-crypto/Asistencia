@@ -63,6 +63,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Rellenar selectores de la barra de filtros
     rellenarSelectoresDashboard();
     
+    // Forzar programa TUSGE si se accede por el enlace /dashboard-tusge
+    if (window.location.pathname.includes('/dashboard-tusge')) {
+      dbFilterPrograma.value = 'TUSGE';
+      dbFilterPrograma.disabled = true;
+    }
+    
     // Registrar Event Listeners
     registrarEventListeners();
     
@@ -160,7 +166,7 @@ function registrarEventListeners() {
     dbResetFiltersBtn.addEventListener('click', () => {
       dbFilterDesde.value = '';
       dbFilterHasta.value = '';
-      dbFilterPrograma.value = 'TODOS';
+      dbFilterPrograma.value = window.location.pathname.includes('/dashboard-tusge') ? 'TUSGE' : 'TODOS';
       dbFilterProfesor.value = 'TODOS';
       dbFilterMateria.value = 'TODOS';
       dbFilterSearch.value = '';

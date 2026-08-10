@@ -231,13 +231,14 @@ function verificarSesion() {
 
 async function initApp() {
   // 0. Cargar preferencia de tema (Claro/Oscuro)
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  if (savedTheme === 'light') {
-    document.body.classList.add('light-theme');
-    themeToggleIcon.setAttribute('data-lucide', 'moon');
-  } else {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
     document.body.classList.remove('light-theme');
     themeToggleIcon.setAttribute('data-lucide', 'sun');
+  } else {
+    // Por defecto (primera visita) o explícitamente claro
+    document.body.classList.add('light-theme');
+    themeToggleIcon.setAttribute('data-lucide', 'moon');
   }
 
   // 1. Establecer fecha de hoy

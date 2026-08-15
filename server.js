@@ -348,6 +348,8 @@ app.put('/api/docentes/:id', async (req, res) => {
   }
   try {
     await dbRun("UPDATE docentes SET nombre = ? WHERE id = ?", [nombre, id]);
+    // Asegurar consistencia actualizando el nombre del docente desnormalizado en la tabla asistencias
+    await dbRun("UPDATE asistencias SET docente_nombre = ? WHERE docente_id = ?", [nombre, id]);
     res.json({ mensaje: 'Docente actualizado con éxito' });
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar docente: ' + error.message });
@@ -392,6 +394,12 @@ app.put('/api/materias/:id', async (req, res) => {
     await dbRun(
       "UPDATE materias SET nombre = ?, programa = ?, idioma_predeterminado = ? WHERE id = ?",
       [nombre, programa, idioma_predeterminado, id]
+    );
+
+    // Asegurar consistencia actualizando el nombre y programa de la materia desnormalizados en la tabla asistencias
+    await dbRun(
+      "UPDATE asistencias SET materia_nombre = ?, programa = ? WHERE materia_id = ?",
+      [nombre, programa, id]
     );
 
     // Obtener gestión activa

@@ -170,8 +170,10 @@ const columnsDropdownMenu = document.getElementById('columns-dropdown-menu');
 const appNavTabs = document.getElementById('app-nav-tabs');
 const navRegistroBtn = document.getElementById('nav-registro-btn');
 const navDashboardBtn = document.getElementById('nav-dashboard-btn');
+const navAuditoriaBtn = document.getElementById('nav-auditoria-btn');
 const sectionRegistro = document.getElementById('section-registro');
 const sectionDashboard = document.getElementById('section-dashboard');
+const sectionAuditoria = document.getElementById('section-auditoria');
 const dashboardPdfBtn = document.getElementById('dashboard-pdf-btn');
 
 // --- Filtros del Dashboard ---
@@ -1092,7 +1094,10 @@ function registrarEventListeners() {
       if (docenteEditId !== null) {
         res = await fetch(`/api/docentes/${docenteEditId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Audit-Username': activeUser ? activeUser.username : 'Administrador'
+          },
           body: JSON.stringify({ nombre })
         });
         data = await res.json();
@@ -1101,7 +1106,10 @@ function registrarEventListeners() {
       } else {
         res = await fetch('/api/docentes', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Audit-Username': activeUser ? activeUser.username : 'Administrador'
+          },
           body: JSON.stringify({ nombre })
         });
         data = await res.json();
@@ -1212,7 +1220,10 @@ function registrarEventListeners() {
         if (materiaEditId !== null) {
           res = await fetch(`/api/materias/${materiaEditId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Audit-Username': activeUser ? activeUser.username : 'Administrador'
+            },
             body: JSON.stringify({ nombre, programa, idioma_predeterminado, docente_id })
           });
           data = await res.json();
@@ -1221,7 +1232,10 @@ function registrarEventListeners() {
         } else {
           res = await fetch('/api/materias', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Audit-Username': activeUser ? activeUser.username : 'Administrador'
+            },
             body: JSON.stringify({ nombre, programa, idioma_predeterminado, docente_id })
           });
           data = await res.json();
@@ -1270,12 +1284,14 @@ function registrarEventListeners() {
   cancelGestionEditBtn.addEventListener('click', cancelarGestionEdit);
 
   // --- Event Listeners de las Pestañas de Navegación de la App ---
-  if (navRegistroBtn && navDashboardBtn) {
+  if (navRegistroBtn && navDashboardBtn && navAuditoriaBtn) {
     navRegistroBtn.addEventListener('click', () => {
       navRegistroBtn.classList.add('active');
       navDashboardBtn.classList.remove('active');
+      navAuditoriaBtn.classList.remove('active');
       sectionRegistro.style.display = 'block';
       sectionDashboard.style.display = 'none';
+      sectionAuditoria.style.display = 'none';
       dashboardPdfBtn.style.display = 'none';
       openAdminBtn.style.display = 'flex';
     });
@@ -1283,13 +1299,29 @@ function registrarEventListeners() {
     navDashboardBtn.addEventListener('click', () => {
       navDashboardBtn.classList.add('active');
       navRegistroBtn.classList.remove('active');
+      navAuditoriaBtn.classList.remove('active');
       sectionDashboard.style.display = 'block';
       sectionRegistro.style.display = 'none';
+      sectionAuditoria.style.display = 'none';
       openAdminBtn.style.display = 'none';
       dashboardPdfBtn.style.display = 'flex';
       
       // Inicializar y renderizar los gráficos al entrar
       actualizarDashboard();
+    });
+
+    navAuditoriaBtn.addEventListener('click', () => {
+      navAuditoriaBtn.classList.add('active');
+      navRegistroBtn.classList.remove('active');
+      navDashboardBtn.classList.remove('active');
+      sectionAuditoria.style.display = 'block';
+      sectionRegistro.style.display = 'none';
+      sectionDashboard.style.display = 'none';
+      openAdminBtn.style.display = 'none';
+      dashboardPdfBtn.style.display = 'none';
+      
+      // Cargar logs de auditoría al entrar
+      cargarLogsAuditoria();
     });
   }
 
@@ -1635,7 +1667,10 @@ async function eliminarDocente(id) {
   if (!confirm('¿Desea eliminar este docente de los datos maestros? No afectará a los registros de asistencia ya cargados.')) return;
 
   try {
-    const res = await fetch(`/api/docentes/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/docentes/${id}`, { 
+      method: 'DELETE',
+      headers: { 'X-Audit-Username': activeUser ? activeUser.username : 'Administrador' }
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Error al eliminar docente');
 
@@ -1653,7 +1688,10 @@ async function eliminarMateria(id) {
   if (!confirm('¿Desea eliminar esta materia de los datos maestros? No afectará a los registros de asistencia ya cargados.')) return;
 
   try {
-    const res = await fetch(`/api/materias/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/materias/${id}`, { 
+      method: 'DELETE',
+      headers: { 'X-Audit-Username': activeUser ? activeUser.username : 'Administrador' }
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Error al eliminar materia');
 
@@ -1897,7 +1935,10 @@ async function handleFormSubmit(e) {
       // Modo Edición (PUT)
       res = await fetch(`/api/asistencias/${currentEditId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Audit-Username': activeUser ? activeUser.username : 'Administrador'
+        },
         body: JSON.stringify(bodyData)
       });
       data = await res.json();
@@ -1907,7 +1948,10 @@ async function handleFormSubmit(e) {
       // Modo Creación (POST)
       res = await fetch('/api/asistencias', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Audit-Username': activeUser ? activeUser.username : 'Administrador'
+        },
         body: JSON.stringify(bodyData)
       });
       data = await res.json();
@@ -1940,7 +1984,8 @@ async function deleteAsistencia(id) {
 
   try {
     const res = await fetch(`/api/asistencias/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: { 'X-Audit-Username': activeUser ? activeUser.username : 'Administrador' }
     });
 
     const resJson = await res.json();
@@ -3074,4 +3119,315 @@ function handleChartElementClick(canvasId, label) {
       }
     }
   }
+  }
+}
+
+// --- LOGS DE AUDITORÍA Y CONTROL ---
+
+const auditFilterAccion = document.getElementById('audit_filter_accion');
+const auditFilterUsuario = document.getElementById('audit_filter_usuario');
+const auditFilterSearch = document.getElementById('audit_filter_search');
+const auditLogsTbody = document.getElementById('audit-logs-tbody');
+let auditLogsCache = [];
+
+async function cargarLogsAuditoria() {
+  if (!auditLogsTbody) return;
+  
+  auditLogsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px;"><div class="spinner inline-spinner"></div> Cargando historial de cambios...</td></tr>`;
+  
+  try {
+    const res = await fetch('/api/logs_auditoria');
+    if (!res.ok) throw new Error('No se pudieron obtener los logs de auditoría');
+    auditLogsCache = await res.json();
+    filtrarYRenderizarLogs();
+  } catch (err) {
+    auditLogsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--red-c); padding:20px;">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function filtrarYRenderizarLogs() {
+  if (!auditLogsTbody) return;
+  
+  const accion = auditFilterAccion ? auditFilterAccion.value : 'TODOS';
+  const usuario = auditFilterUsuario ? auditFilterUsuario.value.toLowerCase().trim() : '';
+  const buscar = auditFilterSearch ? auditFilterSearch.value.toLowerCase().trim() : '';
+  
+  const filtrados = auditLogsCache.filter(log => {
+    if (accion !== 'TODOS' && log.accion !== accion) return false;
+    
+    if (usuario && !String(log.usuario_nombre || '').toLowerCase().includes(usuario)) return false;
+    
+    if (buscar) {
+      const contenidoLog = `${log.tabla} ${log.detalles} ${log.registro_id} ${log.accion}`.toLowerCase();
+      if (!contenidoLog.includes(buscar)) return false;
+    }
+    return true;
+  });
+
+  if (filtrados.length === 0) {
+    auditLogsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);"><i data-lucide="info" style="vertical-align:middle; margin-right:4px;"></i>No se encontraron registros en el historial de cambios.</td></tr>`;
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  auditLogsTbody.innerHTML = filtrados.map(log => {
+    let fechaFormateada = log.fecha_hora;
+    try {
+      const d = new Date(log.fecha_hora);
+      fechaFormateada = d.toLocaleString('es-ES', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (e) {}
+
+    let badgeClass = 'puntual-badge';
+    let accionTraducida = log.accion;
+
+    if (log.accion.includes('ELIMINACION')) {
+      badgeClass = 'no-badge';
+      accionTraducida = 'Eliminación';
+    } else if (log.accion.includes('EDICION')) {
+      badgeClass = 'rep-badge';
+      accionTraducida = 'Modificación';
+    } else if (log.accion.includes('REGISTRO') || log.accion.includes('CREACION')) {
+      badgeClass = 'yes-badge';
+      accionTraducida = 'Creación / Registro';
+    }
+
+    let detallesHtml = '';
+    try {
+      const detObj = JSON.parse(log.detalles);
+      if (typeof detObj === 'object') {
+        if (log.accion.includes('EDICION')) {
+          detallesHtml = `<div style="display:flex; flex-direction:column; gap:4px; font-size:12px;">`;
+          Object.entries(detObj).forEach(([campo, diff]) => {
+            detallesHtml += `
+              <div>
+                <strong>${campo}:</strong> 
+                <span style="text-decoration: line-through; color: #dc2626; opacity:0.8; margin-right:6px; background:#fee2e2; padding:1px 4px; border-radius:3px;">${diff.anterior}</span>
+                <span style="margin-right:6px;">➔</span>
+                <span style="font-weight:600; color: #16a34a; background:#dcfce7; padding:1px 4px; border-radius:3px;">${diff.nuevo}</span>
+              </div>`;
+          });
+          detallesHtml += `</div>`;
+        } else {
+          detallesHtml = `<div style="display:flex; flex-wrap:wrap; gap:6px; font-size:11px;">`;
+          Object.entries(detObj).forEach(([campo, valor]) => {
+            if (valor && typeof valor !== 'object') {
+              detallesHtml += `<span style="background:var(--bg-card); border:1px solid var(--border-color); padding:2px 8px; border-radius:12px;"><strong>${campo}:</strong> ${valor}</span> `;
+            }
+          });
+          detallesHtml += `</div>`;
+        }
+      }
+    } catch (e) {
+      detallesHtml = `<span style="font-family:monospace; font-size:11px;">${log.detalles}</span>`;
+    }
+
+    return `
+      <tr>
+        <td style="font-weight: 500; font-size:12px; color:var(--text-muted);">${fechaFormateada}</td>
+        <td style="font-weight: 600; color:var(--text-color);"><i data-lucide="user" style="width:13px; height:13px; display:inline-block; margin-right:4px; vertical-align:middle; opacity:0.7;"></i>${log.usuario_nombre || 'Desconocido'}</td>
+        <td><span class="status-badge ${badgeClass}">${accionTraducida}</span> <small style="display:block; color:var(--text-muted); font-size:9px; margin-top:2px;">${log.accion}</small></td>
+        <td><strong style="text-transform: capitalize; font-size:12px; color:var(--text-color);">${log.tabla}</strong> <span style="font-size:10px; color:var(--text-muted);">[ID: ${log.registro_id || 'N/A'}]</span></td>
+        <td style="padding:10px 14px;">${detallesHtml}</td>
+      </tr>
+    `;
+  }).join('');
+
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+// Configurar event listeners de los filtros de auditoría
+if (auditFilterAccion) auditFilterAccion.addEventListener('change', filtrarYRenderizarLogs);
+if (auditFilterUsuario) auditFilterUsuario.addEventListener('input', filtrarYRenderizarLogs);
+if (auditFilterSearch) auditFilterSearch.addEventListener('input', filtrarYRenderizarLogs);
+
+
+// --- CORRECTOR ORTOGRÁFICO Y COMPROBADOR DE SIMILITUD DE NOMBRES ---
+
+const DICCIONARIO_ACADEMICO = {
+  'matematica': 'matemática', 'matematicas': 'matemáticas',
+  'ingles': 'inglés',
+  'fisica': 'física',
+  'quimica': 'química',
+  'tecnologia': 'tecnología', 'tecnologias': 'tecnologías',
+  'gestion': 'gestión',
+  'comunicacion': 'comunicación',
+  'educacion': 'educación',
+  'programacion': 'programación',
+  'analisis': 'análisis',
+  'gerencial': 'gerencial',
+  'basica': 'básica',
+  'economica': 'económica', 'economicas': 'económicas',
+  'practica': 'práctica', 'practicas': 'prácticas',
+  'algebra': 'álgebra',
+  'estadistica': 'estadística', 'estadisticas': 'estadísticas',
+  'bancaria': 'bancaria', 'regulacion': 'regulación',
+  'metodologia': 'metodología',
+  'investigacion': 'investigación',
+  'introduccion': 'introducción',
+  'seminario': 'seminario',
+  'opinion': 'opinión',
+  'publica': 'pública',
+  'juridica': 'jurídica',
+  'logistica': 'logística',
+  'estrategica': 'estratégica', 'estrategico': 'estratégico',
+  'redaccion': 'redacción',
+  'organizacion': 'organización',
+  'administracion': 'administración',
+  'financiera': 'financiera', 'financieras': 'financieras',
+  'pedagogia': 'pedagogía',
+  'psicologia': 'psicología',
+  'filosofia': 'filosofía',
+  'sociologia': 'sociología',
+  'etica': 'ética'
+};
+
+function obtenerDistanciaLevenshtein(s1, s2) {
+  s1 = s1.toLowerCase().trim();
+  s2 = s2.toLowerCase().trim();
+  const len1 = s1.length;
+  const len2 = s2.length;
+  const matriz = [];
+
+  for (let i = 0; i <= len1; i++) matriz[i] = [i];
+  for (let j = 0; j <= len2; j++) matriz[0][j] = j;
+
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const costo = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      matriz[i][j] = Math.min(
+        matriz[i - 1][j] + 1, // Eliminación
+        matriz[i][j - 1] + 1, // Inserción
+        matriz[i - 1][j - 1] + costo // Sustitución
+      );
+    }
+  }
+  return matriz[len1][len2];
+}
+
+function verificarOrtografiaNombre(nombre, existentes, tipo) {
+  if (!nombre || nombre.trim().length < 3) return null;
+  
+  const nombreTrim = nombre.trim();
+  
+  // 1. Validar Capitalización y Conectores
+  const palabras = nombreTrim.split(/\s+/);
+  const palabrasCapitalizadas = palabras.map(p => {
+    if (p.length === 0) return '';
+    const conector = ['de', 'del', 'y', 'la', 'los', 'para', 'en'].includes(p.toLowerCase());
+    if (conector) return p.toLowerCase();
+    return p[0].toUpperCase() + p.slice(1).toLowerCase();
+  });
+  
+  // 2. Corregir tildes de palabras comunes
+  const palabrasCorregidasOrtografia = palabrasCapitalizadas.map(p => {
+    const limpio = p.toLowerCase().replace(/[.,;:()]/g, '');
+    const reemplazo = DICCIONARIO_ACADEMICO[limpio];
+    if (reemplazo) {
+      const esMayuscula = p[0] === p[0].toUpperCase();
+      return esMayuscula ? reemplazo[0].toUpperCase() + reemplazo.slice(1) : reemplazo;
+    }
+    return p;
+  });
+  
+  const sugerenciaOrtografica = palabrasCorregidasOrtografia.join(' ');
+
+  // Si la sugerencia ortográfica es diferente del original, sugerir
+  if (sugerenciaOrtografica.toLowerCase() !== nombreTrim.toLowerCase() || sugerenciaOrtografica !== nombreTrim) {
+    return {
+      texto: sugerenciaOrtografica,
+      mensaje: `⚠️ Ortografía/Formato: ¿Quisiste decir <strong>"${sugerenciaOrtografica}"</strong>?`
+    };
+  }
+
+  // 3. Similitud con existentes (evitar duplicados muy similares)
+  let mejorCoincidencia = null;
+  let menorDistancia = Infinity;
+
+  existentes.forEach(existente => {
+    const extNombre = existente.nombre || existente;
+    if (extNombre.toLowerCase() !== nombreTrim.toLowerCase()) {
+      const dist = obtenerDistanciaLevenshtein(nombreTrim, extNombre);
+      if (dist <= 2 && dist < menorDistancia) {
+        menorDistancia = dist;
+        mejorCoincidencia = extNombre;
+      }
+    }
+  });
+
+  if (mejorCoincidencia && menorDistancia > 0) {
+    return {
+      texto: mejorCoincidencia,
+      mensaje: `⚠️ Similar detectado: ¿Quisiste decir <strong>"${mejorCoincidencia}"</strong>? (Para evitar duplicados)`
+    };
+  }
+
+  return null;
+}
+
+// Configurar los listeners en los campos del modal de administración
+const inputDocente = document.getElementById('new_docente_nombre');
+const boxDocenteSugerencia = document.getElementById('new-docente-spell-suggestion');
+
+if (inputDocente && boxDocenteSugerencia) {
+  inputDocente.addEventListener('input', () => {
+    const docentesList = (maestrosData && maestrosData.docentes) ? maestrosData.docentes : [];
+    const sugerencia = verificarOrtografiaNombre(inputDocente.value, docentesList, 'docente');
+    
+    if (sugerencia) {
+      boxDocenteSugerencia.innerHTML = `
+        <span>${sugerencia.mensaje}</span>
+        <button type="button" class="spell-suggestion-btn" id="apply-docente-spell">Aplicar</button>
+      `;
+      boxDocenteSugerencia.style.display = 'flex';
+      
+      const btn = document.getElementById('apply-docente-spell');
+      if (btn) {
+        btn.onclick = () => {
+          inputDocente.value = sugerencia.texto;
+          boxDocenteSugerencia.style.display = 'none';
+          inputDocente.dispatchEvent(new Event('input')); // Re-evaluar
+        };
+      }
+    } else {
+      boxDocenteSugerencia.style.display = 'none';
+    }
+  });
+}
+
+const inputMateria = document.getElementById('new_materia_nombre');
+const boxMateriaSugerencia = document.getElementById('new-materia-spell-suggestion');
+
+if (inputMateria && boxMateriaSugerencia) {
+  inputMateria.addEventListener('input', () => {
+    const materiasList = (maestrosData && maestrosData.materias) ? maestrosData.materias : [];
+    const sugerencia = verificarOrtografiaNombre(inputMateria.value, materiasList, 'materia');
+    
+    if (sugerencia) {
+      boxMateriaSugerencia.innerHTML = `
+        <span>${sugerencia.mensaje}</span>
+        <button type="button" class="spell-suggestion-btn" id="apply-materia-spell">Aplicar</button>
+      `;
+      boxMateriaSugerencia.style.display = 'flex';
+      
+      const btn = document.getElementById('apply-materia-spell');
+      if (btn) {
+        btn.onclick = () => {
+          inputMateria.value = sugerencia.texto;
+          boxMateriaSugerencia.style.display = 'none';
+          inputMateria.dispatchEvent(new Event('input')); // Re-evaluar
+        };
+      }
+    } else {
+      boxMateriaSugerencia.style.display = 'none';
+    }
+  });
 }

@@ -12,7 +12,7 @@
   <!-- Lucide Icons (CDN) para iconos limpios y modernos -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Hoja de Estilos -->
-  <link rel="stylesheet" href="/styles.css?v=1.42">
+  <link rel="stylesheet" href="/styles.css?v=1.43">
 </head>
 <body class="light-theme">
   <div class="app-container">
@@ -35,6 +35,9 @@
           </button>
           <button id="nav-dashboard-btn" class="nav-tab-btn" title="Ir al Dashboard Analítico">
             <i data-lucide="bar-chart-2"></i> Dashboard
+          </button>
+          <button id="nav-auditoria-btn" class="nav-tab-btn" title="Ver logs de auditoría y cambios">
+            <i data-lucide="shield-alert"></i> Auditoría
           </button>
         </div>
         <!-- Indicador de Usuario Logueado -->
@@ -693,6 +696,59 @@
 
     </div>
 
+    <!-- Sección de Auditoría (Logs de Cambios) -->
+    <div id="section-auditoria" class="app-section" style="display: none;">
+      <!-- Filtros del Registro de Auditoría -->
+      <section class="dashboard-filters-card">
+        <div class="db-filters-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <div class="form-group">
+            <label for="audit_filter_accion"><i data-lucide="shield-alert"></i> Acción</label>
+            <select id="audit_filter_accion">
+              <option value="TODOS">Todas las Acciones</option>
+              <option value="REGISTRO_ASISTENCIA">Registros de Asistencia</option>
+              <option value="EDICION_ASISTENCIA">Ediciones de Asistencia</option>
+              <option value="ELIMINACION_ASISTENCIA">Eliminaciones de Asistencia</option>
+              <option value="CREACION_DOCENTE">Creaciones de Docente</option>
+              <option value="EDICION_DOCENTE">Ediciones de Docente</option>
+              <option value="ELIMINACION_DOCENTE">Eliminaciones de Docente</option>
+              <option value="CREACION_MATERIA">Creaciones de Materia</option>
+              <option value="EDICION_MATERIA">Ediciones de Materia</option>
+              <option value="ELIMINACION_MATERIA">Eliminaciones de Materia</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="audit_filter_usuario"><i data-lucide="user"></i> Usuario</label>
+            <input type="text" id="audit_filter_usuario" placeholder="Buscar por usuario...">
+          </div>
+          <div class="form-group">
+            <label for="audit_filter_search"><i data-lucide="search"></i> Buscar Detalles</label>
+            <input type="text" id="audit_filter_search" placeholder="Buscar en los detalles...">
+          </div>
+        </div>
+      </section>
+
+      <!-- Tabla de Logs de Auditoría -->
+      <div class="db-table-card" style="margin-top: 20px; width: 100%;">
+        <h4><i data-lucide="list" class="blue-c"></i> Registro Histórico de Cambios</h4>
+        <div class="db-table-wrapper" style="max-height: 600px; overflow-y: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 150px;">Fecha y Hora</th>
+                <th style="width: 130px;">Usuario</th>
+                <th style="width: 180px;">Acción Realizada</th>
+                <th style="width: 120px;">Tabla</th>
+                <th>Detalles de los Cambios / Registro</th>
+              </tr>
+            </thead>
+            <tbody id="audit-logs-tbody">
+              <!-- Dinámico -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast-notification" class="toast" style="display: none;">
       <i id="toast-icon" data-lucide="info"></i>
@@ -744,6 +800,7 @@
                 <button type="submit" class="admin-submit-btn" id="docente-submit-btn">Agregar</button>
                 <button type="button" class="admin-cancel-btn" id="cancel-docente-edit-btn" style="display: none;">Cancelar</button>
               </div>
+              <div id="new-docente-spell-suggestion" class="spell-suggestion-box" style="display: none;"></div>
             </div>
           </form>
 
@@ -777,6 +834,7 @@
               <div class="form-group" id="materia-nombre-group">
                 <label for="new_materia_nombre">Nombre de la Materia</label>
                 <input type="text" id="new_materia_nombre" placeholder="Ej. Finanzas Corporativas" required autocomplete="off">
+                <div id="new-materia-spell-suggestion" class="spell-suggestion-box" style="display: none;"></div>
               </div>
               
               <!-- Carga Masiva Textarea (se mostrará cuando se active bulk) -->
@@ -932,6 +990,6 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/app.js?v=1.42"></script>
+  <script src="/app.js?v=1.43"></script>
 </body>
 </html>

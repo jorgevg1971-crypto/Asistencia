@@ -765,7 +765,7 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ error: 'Usuario y contraseña son obligatorios.' });
   }
   try {
-    const user = await dbGet("SELECT * FROM usuarios WHERE username = ? AND password = ?", [username.trim(), password]);
+    const user = await dbGet("SELECT * FROM usuarios WHERE LOWER(username) = LOWER(?) AND password = ?", [username.trim(), password]);
     if (!user) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
     }

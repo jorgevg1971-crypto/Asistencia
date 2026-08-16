@@ -3172,15 +3172,15 @@ function filtrarYRenderizarLogs() {
   auditLogsTbody.innerHTML = filtrados.map(log => {
     let fechaFormateada = log.fecha_hora;
     try {
-      const d = new Date(log.fecha_hora);
-      fechaFormateada = d.toLocaleString('es-ES', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
+      const limpio = log.fecha_hora.replace('T', ' ');
+      const partesT = limpio.split(' ');
+      if (partesT.length === 2) {
+        const partesFecha = partesT[0].split('-');
+        const horaStr = partesT[1];
+        if (partesFecha.length === 3) {
+          fechaFormateada = `${partesFecha[2]}/${partesFecha[1]}/${partesFecha[0]} ${horaStr}`;
+        }
+      }
     } catch (e) {}
 
     let badgeClass = 'puntual-badge';

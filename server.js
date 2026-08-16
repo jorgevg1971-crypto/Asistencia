@@ -161,12 +161,27 @@ const dbRun = (sql, params = []) => {
   });
 };
 
+const obtenerFechaHoraLaPaz = () => {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'America/La_Paz',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  return formatter.format(now).replace(' ', 'T');
+};
+
 const registrarLogAuditoria = async (usuario_nombre, accion, tabla, registro_id, detalles) => {
   try {
     const detallesTexto = typeof detalles === 'object' ? JSON.stringify(detalles) : detalles;
+    const fechaHoraLaPaz = obtenerFechaHoraLaPaz();
     await dbRun(
-      "INSERT INTO logs_auditoria (usuario_nombre, accion, tabla, registro_id, detalles) VALUES (?, ?, ?, ?, ?)",
-      [usuario_nombre || 'Desconocido', accion, tabla, registro_id, detallesTexto]
+      "INSERT INTO logs_auditoria (usuario_nombre, accion, tabla, registro_id, detalles, fecha_hora) VALUES (?, ?, ?, ?, ?, ?)",
+      [usuario_nombre || 'Desconocido', accion, tabla, registro_id, detallesTexto, fechaHoraLaPaz]
     );
   } catch (error) {
     console.error('Error al registrar log de auditoría:', error.message);

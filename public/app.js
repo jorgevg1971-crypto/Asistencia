@@ -3119,7 +3119,6 @@ function handleChartElementClick(canvasId, label) {
       }
     }
   }
-  }
 }
 
 // --- LOGS DE AUDITORÍA Y CONTROL ---

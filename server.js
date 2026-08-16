@@ -92,6 +92,17 @@ const db = new sqlite3.Database(dbPath, (err) => {
         password TEXT NOT NULL
       )`);
 
+      // Crear tabla de logs_auditoria
+      db.run(`CREATE TABLE IF NOT EXISTS logs_auditoria (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fecha_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
+        usuario_nombre TEXT,
+        accion TEXT NOT NULL,
+        tabla TEXT NOT NULL,
+        registro_id INTEGER,
+        detalles TEXT
+      )`);
+
       // Migraciones de base de datos
       db.run("ALTER TABLE asistencias ADD COLUMN reposicion TEXT DEFAULT 'NO'", (err) => {});
       db.run("ALTER TABLE asistencias ADD COLUMN gestion_id INTEGER", (err) => {});
@@ -110,11 +121,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
         }
       });
 
-      // Cargar usuario administrador Jorge por defecto si está vacío
+      // Cargar usuario administrador epc por defecto si está vacío
       db.get("SELECT COUNT(*) as count FROM usuarios", (err, row) => {
         if (!err && row.count === 0) {
-          db.run("INSERT INTO usuarios (username, password) VALUES ('Jorge', 'logitech:1')", (err) => {
-            if (!err) console.log('Usuario administrador por defecto "Jorge" creado con éxito.');
+          db.run("INSERT INTO usuarios (username, password) VALUES ('epc', 'newadmin')", (err) => {
+            if (!err) console.log('Usuario administrador por defecto "epc" creado con éxito.');
           });
         }
       });
@@ -148,6 +159,18 @@ const dbRun = (sql, params = []) => {
       else resolve(this);
     });
   });
+};
+
+const registrarLogAuditoria = async (usuario_nombre, accion, tabla, registro_id, detalles) => {
+  try {
+    const detallesTexto = typeof detalles === 'object' ? JSON.stringify(detalles) : detalles;
+    await dbRun(
+      "INSERT INTO logs_auditoria (usuario_nombre, accion, tabla, registro_id, detalles) VALUES (?, ?, ?, ?, ?)",
+      [usuario_nombre || 'Desconocido', accion, tabla, registro_id, detallesTexto]
+    );
+  } catch (error) {
+    console.error('Error al registrar log de auditoría:', error.message);
+  }
 };
 
 // Endpoints API
@@ -256,6 +279,31 @@ app.post('/api/asistencias', async (req, res) => {
 
   try {
     const result = await dbRun(sql, params);
+    
+    // Registrar log de auditoría
+    const detallesLog = {
+      fecha,
+      docente: docente_nombre,
+      materia: materia_nombre,
+      programa,
+      dicto_clases,
+      clase: dicto_clases === 'SI' ? clase : 'N/A',
+      reposicion: dicto_clases === 'SI' ? (reposicion || 'NO') : 'N/A',
+      inicio: dicto_clases === 'SI' ? inicio : 'N/A',
+      minutos_atraso: dicto_clases === 'SI' && inicio === 'Con Retraso' ? parseInt(minutos_atraso) || 0 : 0,
+      final_clase: dicto_clases === 'SI' ? final_clase : 'N/A',
+      minutos_final: dicto_clases === 'SI' && final_clase !== 'Puntual' ? parseInt(minutos_final) || 0 : 0,
+      idioma_dictado: dicto_clases === 'SI' ? idioma_dictado : 'N/A',
+      comentarios: comentarios || ''
+    };
+    await registrarLogAuditoria(
+      creado_por_usuario_nombre,
+      'REGISTRO_ASISTENCIA',
+      'asistencias',
+      result.lastID,
+      detallesLog
+    );
+
     res.status(201).json({ mensaje: 'Asistencia registrada con éxito', id: result.lastID });
   } catch (error) {
     res.status(500).json({ error: 'Error al guardar la asistencia: ' + error.message });
@@ -265,8 +313,27 @@ app.post('/api/asistencias', async (req, res) => {
 // 4. Eliminar una asistencia registrada (por seguridad o corrección)
 app.delete('/api/asistencias/:id', async (req, res) => {
   const { id } = req.params;
+  const usuario = req.headers['x-audit-username'] || 'Administrador';
   try {
+    const anterior = await dbGet("SELECT * FROM asistencias WHERE id = ?", [id]);
     await dbRun("DELETE FROM asistencias WHERE id = ?", [id]);
+    
+    if (anterior) {
+      const detallesLog = {
+        fecha: anterior.fecha,
+        docente: anterior.docente_nombre,
+        materia: anterior.materia_nombre,
+        programa: anterior.programa,
+        comentarios: anterior.comentarios
+      };
+      await registrarLogAuditoria(
+        usuario,
+        'ELIMINACION_ASISTENCIA',
+        'asistencias',
+        id,
+        detallesLog
+      );
+    }
     res.json({ mensaje: 'Registro de asistencia eliminado con éxito' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar la asistencia: ' + error.message });
@@ -276,11 +343,19 @@ app.delete('/api/asistencias/:id', async (req, res) => {
 // 5. Agregar un docente
 app.post('/api/docentes', async (req, res) => {
   const { nombre } = req.body;
+  const usuario = req.headers['x-audit-username'] || 'Administrador';
   if (!nombre) {
     return res.status(400).json({ error: 'El nombre del docente es obligatorio.' });
   }
   try {
     const result = await dbRun("INSERT INTO docentes (nombre) VALUES (?)", [nombre]);
+    await registrarLogAuditoria(
+      usuario,
+      'CREACION_DOCENTE',
+      'docentes',
+      result.lastID,
+      { nombre }
+    );
     res.status(201).json({ id: result.lastID, nombre });
   } catch (error) {
     res.status(500).json({ error: 'Error al agregar docente: ' + error.message });
@@ -290,17 +365,29 @@ app.post('/api/docentes', async (req, res) => {
 // 6. Eliminar un docente
 app.delete('/api/docentes/:id', async (req, res) => {
   const { id } = req.params;
+  const usuario = req.headers['x-audit-username'] || 'Administrador';
   try {
+    const anterior = await dbGet("SELECT * FROM docentes WHERE id = ?", [id]);
     await dbRun("DELETE FROM docentes WHERE id = ?", [id]);
+    if (anterior) {
+      await registrarLogAuditoria(
+        usuario,
+        'ELIMINACION_DOCENTE',
+        'docentes',
+        id,
+        { nombre: anterior.nombre }
+      );
+    }
     res.json({ mensaje: 'Docente eliminado con éxito' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar docente: ' + error.message });
   }
 });
 
-// 7. Agregar una materia
+// 7. Registrar una materia
 app.post('/api/materias', async (req, res) => {
   const { nombre, programa, idioma_predeterminado, docente_id } = req.body;
+  const usuario = req.headers['x-audit-username'] || 'Administrador';
   if (!nombre || !programa || !idioma_predeterminado) {
     return res.status(400).json({ error: 'El nombre, programa e idioma son obligatorios.' });
   }
@@ -322,6 +409,14 @@ app.post('/api/materias', async (req, res) => {
       );
     }
 
+    await registrarLogAuditoria(
+      usuario,
+      'CREACION_MATERIA',
+      'materias',
+      materiaId,
+      { nombre, programa, idioma_predeterminado, docente_id }
+    );
+
     res.status(201).json({ id: materiaId, nombre, programa, idioma_predeterminado, docente_id });
   } catch (error) {
     res.status(500).json({ error: 'Error al agregar materia: ' + error.message });
@@ -331,8 +426,19 @@ app.post('/api/materias', async (req, res) => {
 // 8. Eliminar una materia
 app.delete('/api/materias/:id', async (req, res) => {
   const { id } = req.params;
+  const usuario = req.headers['x-audit-username'] || 'Administrador';
   try {
+    const anterior = await dbGet("SELECT * FROM materias WHERE id = ?", [id]);
     await dbRun("DELETE FROM materias WHERE id = ?", [id]);
+    if (anterior) {
+      await registrarLogAuditoria(
+        usuario,
+        'ELIMINACION_MATERIA',
+        'materias',
+        id,
+        { nombre: anterior.nombre, programa: anterior.programa }
+      );
+    }
     res.json({ mensaje: 'Materia eliminada con éxito' });
   } catch (error) {
     res.status(500).json({ error: 'Error al eliminar materia: ' + error.message });
@@ -343,13 +449,31 @@ app.delete('/api/materias/:id', async (req, res) => {
 app.put('/api/docentes/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre } = req.body;
+  const usuario = req.headers['x-audit-username'] || 'Administrador';
   if (!nombre) {
     return res.status(400).json({ error: 'El nombre del docente es obligatorio.' });
   }
   try {
+    const anterior = await dbGet("SELECT * FROM docentes WHERE id = ?", [id]);
     await dbRun("UPDATE docentes SET nombre = ? WHERE id = ?", [nombre, id]);
     // Asegurar consistencia actualizando el nombre del docente desnormalizado en la tabla asistencias
     await dbRun("UPDATE asistencias SET docente_nombre = ? WHERE docente_id = ?", [nombre, id]);
+    
+    if (anterior && anterior.nombre !== nombre) {
+      await registrarLogAuditoria(
+        usuario,
+        'EDICION_DOCENTE',
+        'docentes',
+        id,
+        {
+          Nombre: {
+            anterior: anterior.nombre,
+            nuevo: nombre
+          }
+        }
+      );
+    }
+    
     res.json({ mensaje: 'Docente actualizado con éxito' });
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar docente: ' + error.message });
@@ -387,10 +511,12 @@ app.post('/api/docentes/bulk', async (req, res) => {
 app.put('/api/materias/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre, programa, idioma_predeterminado, docente_id } = req.body;
+  const usuario = req.headers['x-audit-username'] || 'Administrador';
   if (!nombre || !programa || !idioma_predeterminado) {
     return res.status(400).json({ error: 'El nombre, programa e idioma predeterminado son obligatorios.' });
   }
   try {
+    const anterior = await dbGet("SELECT * FROM materias WHERE id = ?", [id]);
     await dbRun(
       "UPDATE materias SET nombre = ?, programa = ?, idioma_predeterminado = ? WHERE id = ?",
       [nombre, programa, idioma_predeterminado, id]
@@ -416,6 +542,23 @@ app.put('/api/materias/:id', async (req, res) => {
         await dbRun(
           "INSERT OR IGNORE INTO materia_docente_gestion (materia_id, docente_id, gestion_id) VALUES (?, ?, ?)",
           [id, parseInt(docente_id), gestionActivaId]
+        );
+      }
+    }
+
+    if (anterior) {
+      const detallesCambios = {};
+      if (anterior.nombre !== nombre) detallesCambios['Nombre'] = { anterior: anterior.nombre, nuevo: nombre };
+      if (anterior.programa !== programa) detallesCambios['Programa'] = { anterior: anterior.programa, nuevo: programa };
+      if (anterior.idioma_predeterminado !== idioma_predeterminado) detallesCambios['Idioma Predeterminado'] = { anterior: anterior.idioma_predeterminado, nuevo: idioma_predeterminado };
+      
+      if (Object.keys(detallesCambios).length > 0) {
+        await registrarLogAuditoria(
+          usuario,
+          'EDICION_MATERIA',
+          'materias',
+          id,
+          detallesCambios
         );
       }
     }
@@ -539,10 +682,77 @@ app.put('/api/asistencias/:id', async (req, res) => {
   ];
 
   try {
+    // Obtener el registro anterior antes de actualizar
+    const anterior = await dbGet("SELECT * FROM asistencias WHERE id = ?", [id]);
+
     await dbRun(sql, params);
+
+    // Comparar y registrar cambios
+    const detallesCambios = {};
+    const camposMapeados = {
+      fecha: 'Fecha',
+      docente_nombre: 'Docente',
+      materia_nombre: 'Materia',
+      programa: 'Programa',
+      dicto_clases: '¿Dictó clase?',
+      clase: 'Modalidad',
+      reposicion: 'Reposición',
+      inicio: 'Inicio',
+      minutos_atraso: 'Minutos Atraso',
+      final_clase: 'Término',
+      minutos_final: 'Minutos Salida Antes',
+      idioma_dictado: 'Idioma',
+      comentarios: 'Comentarios'
+    };
+
+    if (anterior) {
+      Object.entries(camposMapeados).forEach(([dbCol, label]) => {
+        let valAnt = anterior[dbCol];
+        let valNuevo = req.body[dbCol];
+
+        if (dbCol === 'minutos_atraso' || dbCol === 'minutos_final') {
+          valAnt = parseInt(valAnt) || 0;
+          valNuevo = parseInt(valNuevo) || 0;
+        } else if (dbCol === 'comentarios') {
+          valAnt = valAnt || '';
+          valNuevo = valNuevo || '';
+        } else {
+          valAnt = String(valAnt || '').trim();
+          valNuevo = String(valNuevo || '').trim();
+        }
+
+        if (valAnt !== valNuevo) {
+          detallesCambios[label] = {
+            anterior: valAnt,
+            nuevo: valNuevo
+          };
+        }
+      });
+
+      if (Object.keys(detallesCambios).length > 0) {
+        await registrarLogAuditoria(
+          editado_por_usuario_nombre,
+          'EDICION_ASISTENCIA',
+          'asistencias',
+          id,
+          detallesCambios
+        );
+      }
+    }
+
     res.json({ mensaje: 'Asistencia actualizada con éxito' });
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar asistencia: ' + error.message });
+  }
+});
+
+// 12. Obtener todos los logs de auditoría
+app.get('/api/logs_auditoria', async (req, res) => {
+  try {
+    const logs = await dbQueryAll("SELECT * FROM logs_auditoria ORDER BY id DESC LIMIT 1000");
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener logs de auditoría: ' + error.message });
   }
 });
 

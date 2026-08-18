@@ -720,10 +720,27 @@ app.put('/api/asistencias/:id', async (req, res) => {
       comentarios: 'Comentarios'
     };
 
+    const dictoClasesSi = dicto_clases === 'SI';
+    const valoresNuevos = {
+      fecha: fecha,
+      docente_nombre: docente_nombre,
+      materia_nombre: materia_nombre,
+      programa: programa,
+      dicto_clases: dicto_clases,
+      clase: dictoClasesSi ? clase : 'N/A',
+      reposicion: dictoClasesSi ? (reposicion || 'NO') : 'N/A',
+      inicio: dictoClasesSi ? inicio : 'N/A',
+      minutos_atraso: dictoClasesSi && inicio === 'Con Retraso' ? parseInt(minutos_atraso) || 0 : 0,
+      final_clase: dictoClasesSi ? final_clase : 'N/A',
+      minutos_final: dictoClasesSi && final_clase !== 'Puntual' ? parseInt(minutos_final) || 0 : 0,
+      idioma_dictado: dictoClasesSi ? idioma_dictado : 'N/A',
+      comentarios: comentarios || ''
+    };
+
     if (anterior) {
       Object.entries(camposMapeados).forEach(([dbCol, label]) => {
         let valAnt = anterior[dbCol];
-        let valNuevo = req.body[dbCol];
+        let valNuevo = valoresNuevos[dbCol];
 
         if (dbCol === 'minutos_atraso' || dbCol === 'minutos_final') {
           valAnt = parseInt(valAnt) || 0;
